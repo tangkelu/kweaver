@@ -61,6 +61,12 @@
 - 本文中的“vendor chart”指的是 [subCharts](/code/kweaver/kweaver/deploy/charts/subCharts) 下展开后的依赖 chart。
 - 文中同时包含“通用修复”和“仅用于测试验证的临时改动”两类内容，后者已单独标明。
 
+补充说明（2026-03-23）：
+
+- 表格范围内的 chart 已继续做了一轮 helper 治理，原先共用的 `mergedGlobalValues.*` named template 已按 chart 维度改成私有 helper 名，避免在 umbrella 渲染时发生跨 chart helper 覆盖。
+- 为了让 `kweaver-core` 大包在真实环境中更容易安装，部分只用于向 `studio-web-service` 注册菜单的 `post-install` / `post-delete` hook job 已按实际安装反馈从相关 chart 中移除。
+- 对 `hydra`、`sandbox` 这类保留上游 fullname helper 体系的 chart，父 chart 侧通过 `fullnameOverride` 做了稳定命名覆盖，避免资源名继续带 `kweaver-core-` 前缀。
+
 ---
 
 ## 问题类别一：chart 默认 `namespace` 值导致资源落到错误命名空间
@@ -260,6 +266,78 @@ metadata:
 - `agent-executor-yaml`
 - `agent-memory-yaml`
 - `agent-factory-ingress`
+
+---
+
+## 问题类别四：多个子 chart 复用同名 `mergedGlobalValues.*` helper，导致 umbrella 下 helper 串用
+
+### 为什么要这么改
+
+Helm 的 named template 是全局表。虽然很多 chart 都只是想复用一套“全局值优先、本地值兜底”的 helper，但如果多个 chart 都定义：
+
+```tpl
+{{- define "mergedGlobalValues.image" -}}
+```
+
+那么在 umbrella 渲染时，后加载的 chart 会覆盖先加载的 chart。这样会出现两个典型问题：
+
+- 单独 `helm template` 某个 chart 时一切正常，放进 `kweaver-core` 后渲染结果变了
+- 某个 chart 实际调用到了别的 chart 的 `image` / `depServices` / `ingressClassName` 逻辑，进而出现镜像双斜杠、全局值读取错误、ingress class 串值等问题
+
+因此这类 helper 不能继续使用公共名字，必须改成 chart 私有名字。
+
+### 实际改法
+
+按 chart 维度将：
+
+- `mergedGlobalValues.imageRegistry`
+- `mergedGlobalValues.replicaCount`
+- `mergedGlobalValues.env`
+- `mergedGlobalValues.depServices`
+- `mergedGlobalValues.image`
+- 以及相关的 `accessAddress` / `ingressClassName` / `flowAutomation` 等
+
+改成带 chart 前缀的私有 helper，例如：
+
+- `agentWeb.image`
+- `agentBackend.depServices`
+- `deployWeb.ingressClassName`
+- `businessSystemFrontend.image`
+- `bknBackend.imageRegistry`
+
+### 这一轮已完成的范围
+
+- `decision-agent`：`agent-web`、`agent-backend`
+- `studio`：`deploy-web`、`studio-web`、`business-system-frontend`、`business-system-service`、`mf-model-api`、`mf-model-manager`、`mf-model-manager-nginx`
+- `adp`：`agent-operator-integration`、`operator-web`、`agent-retrieval`、`flow-web`、`dataflow`、`coderunner`、`bkn-backend`、`ontology-query`、`data-connection`、`vega-web`、`vega-gateway`、`vega-gateway-pro`、`mdl-data-model`、`mdl-uniquery`、`mdl-data-model-job`
+- `isf`：`hydra`、`sharemgnt-single`、`sharemgnt`、`user-management`、`authentication`、`policy-management`、`audit-log`、`eacp`、`isfweb`、`isfwebthrift`、`authorization`、`ingress-informationsecurityfabric`、`oauth2-ui`
+- `sandbox`：`sandbox`
+
+### 结果
+
+这轮治理后，表格范围内 chart 源码已经不再残留 `define "mergedGlobalValues.*"` / `include "mergedGlobalValues.*"` 的通用 helper 引用，后续 umbrella 安装时不再会因为 named template 冲突导致不同 chart 之间互相污染。
+
+---
+
+## 问题类别五：部分 UI 注册类 hook job 会阻塞安装，需从 chart 中移除
+
+### 为什么要这么改
+
+部分 chart 带有 `post-install` / `post-delete` job，用于调用 `studio-web-service` 注册或删除菜单。它们本质上不是组件自身运行所必需资源，但在低配环境、依赖未完全就绪或菜单接口不可用时，这类 job 很容易持续失败，从而拖垮整个 umbrella release 的安装/卸载体验。
+
+因此对于当前联调验证，先将这些非核心 hook job 从 chart 中去掉，使 release 能先稳定安装并把核心服务拉起来。
+
+### 本轮已删除的 hook job
+
+- `agent-web`：`post-install-job.yaml`、`post-delete-job.yaml`
+- `flow-web`：`post-install-job.yaml`、`post-delete-job.yaml`
+- `operator-web`：`post-install-job.yaml`、`post-delete-job.yaml`
+- `vega-web`：`post-install-job.yaml`、`post-delete-job.yaml`
+- `mf-model-manager-nginx`：`post-install-job.yaml`、`post-delete-job.yaml`
+
+### 结果
+
+这些 chart 重新打包后，不再在 `kweaver-core` 最终大包中渲染对应的 hook job，避免因为菜单注册/删除失败而阻塞 release 安装。
 
 而拆分后的独立 chart 也会创建同名对象，于是直接冲突。
 

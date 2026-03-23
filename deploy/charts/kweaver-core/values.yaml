@@ -121,6 +121,12 @@ modules:
   modelfactory:
     enabled: true
 
+hydra:
+  fullnameOverride: hydra
+
+sandbox:
+  fullnameOverride: sandbox
+
 
 # ---------------------------------------------------------------------------
 # Database initialization hook
