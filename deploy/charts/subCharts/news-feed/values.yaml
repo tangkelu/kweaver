@@ -1,0 +1,74 @@
+replicaCount: 1
+nodeSelector: {}
+namespace: news-feed
+image:
+  registry: ""
+  service:
+    repository: as/news-feed
+    tag: "0.3.0-49dce71-20260206.1"
+    pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 30930
+  language: zh_CN
+  logger: stdout
+  sslOn: false
+  certFile: /sysvol/conf/news-feed.crt
+  keyFile: /sysvol/conf/news-feed.key
+  businessTimeOffset: 0
+  openedKeepAliveTime: 300
+  upgradedKeepAliveTime: 3600
+  logLevel: 4
+  multipleReplicas: true
+  readinessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  livenessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 5
+  enableDualStack: false
+env:
+  language: en_US.UTF-8
+  timezone: Asia/Shanghai
+depServices:
+  hydra:
+    publicHost: hydra-public
+    publicPort: 4444
+    administrativeHost: hydra-admin
+    administrativePort: 4445
+  redis:
+    connectType: sentinel|standalone|master-slave
+    enableSSL: false
+    connectInfo:
+      username: ""
+      password: ""
+      host: ""
+      port: 26379
+      masterHost: ""
+      masterPort: 26379
+      slaveHost: ""
+      slavePort: 26379
+      sentinelHost: proton-redis-proton-redis-sentinel.resource.svc.cluster.local
+      sentinelPort: 26379
+      sentinelUsername: ""
+      sentinelPassword: ""
+      masterGroupName: mymaster
+    secretName: ""
+    caName: ""
+    certName: ""
+    keyName: ""
+  mq: {}
+securityContext:
+  runAsUser: 5000
+  runAsGroup: 5000
+resources:
+  requests:
+    cpu: 10m
+    memory: 100Mi
+  limits:
+    cpu: 2
+    memory: 1Gi

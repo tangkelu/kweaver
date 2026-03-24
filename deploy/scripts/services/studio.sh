@@ -3,8 +3,6 @@
 declare -a STUDIO_RELEASES=(
     "deploy-web"
     "studio-web"
-    "business-system-frontend"
-    "business-system-service"
     "mf-model-manager-nginx"
     "mf-model-manager"
     "mf-model-api"

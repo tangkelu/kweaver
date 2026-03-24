@@ -1,0 +1,82 @@
+apiVersion: v2
+name: kweaver-core-local
+description: Local umbrella chart for validating kweaver-core global passthrough against checked-out repos
+type: application
+version: 0.1.0-local.1
+appVersion: "0.3.0"
+
+dependencies:
+  - name: agent-operator-integration
+    version: "0.2.0"
+    repository: "file://../../../../adp/execution-factory/operator-integration/helm/agent-operator-integration"
+    condition: modules.agentoperator.enabled
+
+  - name: operator-web
+    version: "2.0.0"
+    repository: "file://../../../../adp/execution-factory/operator-web/charts/operator-web"
+    condition: modules.agentoperator.enabled
+
+  - name: agent-retrieval
+    version: "1.0.0"
+    repository: "file://../../../../adp/context-loader/agent-retrieval/helm/agent-retrieval"
+    condition: modules.agentoperator.enabled
+
+  - name: agent-backend
+    version: "1.0.0"
+    repository: "file://../../../../decision-agent/agent-backend/deploy/helm/agent-backend"
+    condition: modules.dataagent.enabled
+
+  - name: agent-web
+    version: "2.0.0"
+    repository: "file://../../../../decision-agent/agent-web/charts/agent-web"
+    condition: modules.dataagent.enabled
+
+  - name: coderunner
+    version: "1.0.0"
+    repository: "file://../../../../adp/dataflow/charts/coderunner"
+    condition: modules.dataagent.enabled
+
+  - name: dataflow
+    version: "1.0.0"
+    repository: "file://../../../../adp/dataflow/charts/dataflow"
+    condition: modules.dataagent.enabled
+
+  - name: ontology-query
+    version: "6.0.0"
+    repository: "file://../../../../adp/bkn/ontology-query/helm/ontology-query"
+    condition: modules.ontology.enabled
+
+  - name: vega-web
+    version: "6.0.0"
+    repository: "file://../../../../adp/web/helm/vega-web"
+    condition: modules.ontology.enabled
+
+  - name: data-connection
+    version: "1.0.0"
+    repository: "file://../../../../adp/vega/data-connection/helm/data-connection"
+    condition: modules.ontology.enabled
+
+  - name: vega-gateway
+    version: "1.0.0-alpha"
+    repository: "file://../../../../adp/vega/vega-gateway/helm/vega-gateway"
+    condition: modules.ontology.enabled
+
+  - name: vega-gateway-pro
+    version: "3.2.0"
+    repository: "file://../../../../adp/vega/vega-gateway-pro/helm/vega-gateway-pro"
+    condition: modules.ontology.enabled
+
+  - name: mdl-data-model
+    version: "6.0.0"
+    repository: "file://../../../../adp/vega/mdl-data-model/helm/mdl-data-model"
+    condition: modules.ontology.enabled
+
+  - name: mdl-uniquery
+    version: "6.0.0"
+    repository: "file://../../../../adp/vega/mdl-uniquery/helm/mdl-uniquery"
+    condition: modules.ontology.enabled
+
+  - name: mdl-data-model-job
+    version: "6.0.0"
+    repository: "file://../../../../adp/vega/mdl-data-model-job/helm/mdl-data-model-job"
+    condition: modules.ontology.enabled

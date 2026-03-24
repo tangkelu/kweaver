@@ -1,0 +1,62 @@
+{{- $env := include "mergedGlobalValues.env" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+{{- $accessAddress := include "mergedGlobalValues.accessAddress" . | fromYaml -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-conf
+  namespace: {{ .Release.Namespace }}
+data:
+  isfweb.ini: |
+    [uwsgi]
+    master = true
+    workers = {{ .Values.uwsgi.workers }}
+
+    # 最小Worker数量
+    cheaper = 1
+
+    http-socket = 127.0.0.1:18002
+    chdir = /sysvol/apphome/app/ISFWeb/ISFWebThrift
+    module = wsgi
+    buffer-size = 16384
+  service_access.conf: |
+    [isfwebthrift]
+    host = {{ $depServices.isfwebthrift.publicHost }}
+    port = {{ $depServices.isfwebthrift.publicPort }}
+    [isfweb]
+    host = {{ $depServices.isfweb.publicHost }}
+    port = {{ $depServices.isfweb.publicPort }}
+    [hydra]
+    publicHost = {{ $depServices.hydra.publicHost }}
+    publicPort = {{ $depServices.hydra.publicPort }}
+    administrativeHost = {{ $depServices.hydra.administrativeHost }}
+    administrativePort = {{ $depServices.hydra.administrativePort }}
+    [sharemgnt]
+    host = {{ $depServices.sharemgnt.host }}
+    port = {{ $depServices.sharemgnt.port }}
+    [sharemgnt-single]
+    host = {{ index $depServices "sharemgnt-single" "host" }}
+    port = {{ index $depServices "sharemgnt-single" "port" }}
+    [eacp]
+    publicHttpHost: {{ $depServices.eacp.publicHttpHost }}
+    publicHttpPort: {{ $depServices.eacp.publicHttpPort }}
+    privateHttpHost: {{ $depServices.eacp.privateHttpHost }}
+    privateHttpPort: {{ $depServices.eacp.privateHttpPort }}
+    thriftHost: {{ $depServices.eacp.thriftHost }}
+    thriftPort: {{ $depServices.eacp.thriftHost }}
+    [user-management]
+    publicHost: {{ index $depServices "user-management" "publicHost" }}
+    publicPort: {{ index $depServices "user-management" "publicPort" }}
+    privateHost: {{ index $depServices "user-management" "privateHost" }}
+    privatePort: {{ index $depServices "user-management" "privatePort" }}
+    [authentication]
+    publicHost: {{ index $depServices "authentication" "publicHost" }}
+    publicPort: {{ index $depServices "authentication" "publicPort" }}
+    privateHost: {{ index $depServices "authentication" "privateHost" }}
+    privatePort: {{ index $depServices "authentication" "privatePort" }}
+    [ossgatewaymanager]
+    privateHost: {{ index $depServices "ossgatewaymanager" "privateHost" }}
+    privatePort: {{ index $depServices "ossgatewaymanager" "privatePort" }}
+    [audit-log]
+    privateHost: {{ index $depServices "audit-log" "privateHost" }}
+    privatePort: {{ index $depServices "audit-log" "privatePort" }}

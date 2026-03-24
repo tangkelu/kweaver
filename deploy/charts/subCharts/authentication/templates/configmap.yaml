@@ -1,0 +1,80 @@
+{{- $env := include "mergedGlobalValues.env" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+{{- $accessAddress := include "mergedGlobalValues.accessAddress" . | fromYaml -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-yaml
+  namespace: {{ .Release.Namespace }}
+data:
+  authentication.yaml: |
+
+    # 配置文件路径/sysvol/conf/authentication.yaml
+    lang: {{ .Values.service.language }} #系统语言
+
+    # Authentication服务
+    svc_host: 0.0.0.0
+    svc_public_port: {{ .Values.service.port }}
+    svc_private_port: {{ add1 .Values.service.port }}
+
+    # 数据库
+    max_open_conns: {{ $depServices.rds.maxConnections }}
+    timeout: {{ $depServices.rds.timeout }}
+    read_timeout: {{ $depServices.rds.readTimeout }}
+    write_timeout: {{ $depServices.rds.writeTimeout }}
+    system_id: {{ $depServices.rds.system_id | quote }}
+
+    #eacp
+    eacp_private_host: {{ $depServices.eacp.privateHttpHost | quote }}
+    eacp_private_port: {{ $depServices.eacp.privateHttpPort }}
+
+    #user-management
+    user_management_private_host: {{ index $depServices "user-management" "privateHost" | quote }}
+    user_management_private_port: {{ index $depServices "user-management" "privatePort" }}
+
+    #授权服务
+    oauth_public_host: {{ $depServices.hydra.publicHost | quote }}
+    oauth_public_port: {{ $depServices.hydra.publicPort }}
+    oauth_admin_host: {{ $depServices.hydra.administrativeHost | quote }}
+    oauth_admin_port: {{ $depServices.hydra.administrativePort }}
+
+    #sharemgnt
+    sharemgnt_host: {{ $depServices.sharemgnt.host | quote }}
+    sharemgnt_port: {{ $depServices.sharemgnt.port }}
+
+    # SSL证书
+    ssl_on: {{ .Values.service.sslOn }}
+    cert_file: {{ .Values.service.certFile }}
+    key_file: {{ .Values.service.keyFile }}
+
+    # 系统业务时间
+    business_time_offset: {{ .Values.service.businessTimeOffset }}
+
+    # flow 清理时间
+    flow_expired_time: {{ .Values.service.flowExpiredTime }}
+    flow_clean_time: {{ .Values.service.flowCleanTime }}
+
+    # 日志等级
+    log_level: {{ .Values.service.logLevel }}
+
+    #redis服务
+    redis:
+      connectType: {{$depServices.redis.connectType | quote }}
+      enableSSL: {{$depServices.redis.enableSSL }}
+      connectInfo:
+        host: {{$depServices.redis.connectInfo.host | quote }}
+        port: {{$depServices.redis.connectInfo.port }}
+        masterHost: {{$depServices.redis.connectInfo.masterHost | quote }}
+        masterPort: {{$depServices.redis.connectInfo.masterPort }}
+        slaveHost: {{$depServices.redis.connectInfo.slaveHost | quote }}
+        slavePort: {{$depServices.redis.connectInfo.slavePort }}
+        sentinelHost: {{$depServices.redis.connectInfo.sentinelHost | quote }}
+        sentinelPort: {{$depServices.redis.connectInfo.sentinelPort }}
+        masterGroupName: {{$depServices.redis.connectInfo.masterGroupName | quote }}
+      secretName: {{$depServices.redis.secretName }}
+      caName: {{$depServices.redis.caName }}
+      certName: {{$depServices.redis.certName }}
+      keyName: {{$depServices.redis.keyName }}
+
+  mq_config.yaml: |
+    {{- toYaml $depServices.mq | nindent 4 }}

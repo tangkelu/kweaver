@@ -1,0 +1,75 @@
+# Agent Memory ConfigMap (环境变量)
+# 从老Chart复制，修改name为固定值
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+apiVersion: v1
+data:
+  RDSHOST: {{ $depServices.rds.host | quote}}
+  RDSPORT: {{ quote $depServices.rds.port }}
+  RDSUSER: {{ $depServices.rds.user | quote}}
+  RDSPASS: {{ $depServices.rds.password | quote}}
+  DB_TYPE: {{ $depServices.rds.type | quote}}
+  RDSDBNAME: {{ $depServices.rds.database | quote}}
+  REDISCLUSTERMODE: {{ $depServices.redis.connectType | quote}}
+  REDISUSER: {{ $depServices.redis.connectInfo.username | quote}}
+  REDISPASS: {{ $depServices.redis.connectInfo.password | quote}}
+  {{- if eq $depServices.redis.connectType "sentinel" }}
+  REDISHOST: {{ quote $depServices.redis.connectInfo.sentinelHost }}
+  REDISPORT: {{ quote $depServices.redis.connectInfo.sentinelPort }}
+  SENTINELMASTER: {{ $depServices.redis.connectInfo.masterGroupName | quote }}
+  SENTINELUSER: {{ $depServices.redis.connectInfo.sentinelUsername | quote}}
+  SENTINELPASS: {{ $depServices.redis.connectInfo.sentinelPassword | quote}}
+  {{- else if eq $depServices.redis.connectType "standalone" }}
+  REDISHOST: {{ quote $depServices.redis.connectInfo.host }}
+  REDISPORT: {{ quote $depServices.redis.connectInfo.port }}
+  {{- else if eq $depServices.redis.connectType "master-slave" }}
+  REDISREADHOST: {{ $depServices.redis.connectInfo.slaveHost | quote}}
+  REDISREADPORT: {{ quote $depServices.redis.connectInfo.slavePort }}
+  REDISREADUSER: {{ $depServices.redis.connectInfo.username | quote}}
+  REDISREADPASS: {{ $depServices.redis.connectInfo.password | quote}}
+  REDISWRITEHOST: {{ $depServices.redis.connectInfo.masterHost | quote}}
+  REDISWRITEPORT: {{ quote $depServices.redis.connectInfo.masterPort }}
+  REDISWRITEUSER: {{ $depServices.redis.connectInfo.username | quote}}
+  REDISWRITEPASS: {{ $depServices.redis.connectInfo.password | quote}}
+  {{- end }}
+  DUAL_STACK: {{ quote .Values.service.enableDualStack }}
+  LOG_URL: {{ .Values.agentMemory.telemetry.log.endpoint | quote }}
+  LOG_ENABLE: {{ quote .Values.agentMemory.telemetry.log.enabled }}
+  METRIC_URL: {{ .Values.agentMemory.telemetry.metric.endpoint | quote }}
+  METRIC_ENABLE: {{ quote .Values.agentMemory.telemetry.metric.enabled }}
+  TRACE_ENABLE: {{ quote .Values.agentMemory.telemetry.trace.enabled }}
+  TRACE_URL: {{ .Values.agentMemory.telemetry.trace.endpoint | quote}}
+  OPENSEARCH_HOST: {{ $depServices.opensearch.host | quote}}
+  OPENSEARCHRED: {{ $depServices.opensearch.read | quote}}
+  OPENSEARCHWRITE: {{ $depServices.opensearch.write | quote}}
+  OPENSEARCH_PORT: {{ quote $depServices.opensearch.port }}
+  OPENSEARCH_USER: {{ $depServices.opensearch.user | quote}}
+  OPENSEARCH_PASS: {{ $depServices.opensearch.password | quote}}
+  GRAPHDB_TYPE: {{ quote $depServices.graphDatabase.type }}
+  GRAPHDB_HOST: {{ quote $depServices.graphDatabase.host }}
+  GRAPHDB_PORT: {{ quote $depServices.graphDatabase.port }}
+  GRAPHDB_USER: {{ quote $depServices.graphDatabase.user }}
+  GRAPHDB_PASSWORD: {{ quote $depServices.graphDatabase.password }}
+  {{- if eq $depServices.graphDatabase.type "nebulaGraph" }}
+  GRAPHDB_READ_ONLY_USER: {{ quote $depServices.graphDatabase.readonlyuser }}
+  GRAPHDB_READ_ONLY_PASSWORD: {{ quote $depServices.graphDatabase.readonlypassword }}
+  {{- end }}
+  # Memory特有变量
+  EMBEDDING_MODEL: {{ quote .Values.agentMemory.embedding.model }}
+  EMB_URL:  {{ quote $depServices.llm_ad.embeddingUrl }}
+  EMBEDDING_DIMENSION: {{ quote $depServices.llm_ad.embeddingDimension }}
+  LLM_BASE_URL: {{ quote .Values.agentMemory.llm.base_url }}
+  LLM_MODEL: {{ quote .Values.agentMemory.llm.model }}
+  EMBEDDING_MODEL_BASE_URL: {{ quote .Values.agentMemory.embedding.base_url }}
+  EMBEDDING_MODEL_DIMS: {{ quote .Values.agentMemory.embedding.dims }}
+  RERANK_MODEL: {{ quote .Values.agentMemory.rerank.model }}
+  RERANK_URL: {{ quote .Values.agentMemory.rerank.url }}
+  dm_svc.conf: |
+    TIME_ZON=(480)
+    LANGUAGE=(cn)
+    DM={{ printf "(%s)" $depServices.rds.host }}
+    [DM]
+    LOGIN_MODE=(1)
+kind: ConfigMap
+metadata:
+  name: {{ .Values.moduleName }}-memory-yaml
+  namespace: {{ .Release.Namespace }}

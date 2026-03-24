@@ -1,0 +1,32 @@
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+{{- $accessAddress := include "mergedGlobalValues.accessAddress" . | fromYaml -}}
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: {{ include "template.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "template.labels" . | nindent 4 }}
+data: 
+  depServices.yaml: |
+    {{- toYaml $depServices |  nindent 4 }}
+  accessAddr.yaml: |
+    {{- toYaml $accessAddress |  nindent 4 }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: {{ include "template.fullname" . }}-backend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "template.labels" . | nindent 4 }}
+data: 
+  APP_PORT: "8877"
+  APP_DB_HOST: {{ $depServices.rds.host | quote }}
+  APP_DB_PORT: {{ $depServices.rds.port | quote }}
+  APP_DB_NAME: {{ $depServices.rds.database | quote }}
+  APP_DB_USER: {{ $depServices.rds.user | quote }}
+  APP_DB_PASSWORD: {{ $depServices.rds.password | quote }}
+  APP_DB_TYPE: {{ $depServices.rds.type | upper | quote }}
+  APP_DB_SYSTEMID: {{ $depServices.rds.system_id | default "" | quote }}

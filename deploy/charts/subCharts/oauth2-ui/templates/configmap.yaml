@@ -1,0 +1,46 @@
+{{- $env := include "mergedGlobalValues.env" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+{{- $accessAddress := include "mergedGlobalValues.accessAddress" . | fromYaml -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-ui-conf
+  namespace: {{ .Release.Namespace }}
+data:
+  service.conf: |
+    [hydra]
+    publicHost = {{ $depServices.hydra.publicHost }}
+    publicPort = {{ $depServices.hydra.publicPort }}
+    publicProtocol = {{ $depServices.hydra.publicProtocol }}
+    administrativeHost = {{ $depServices.hydra.administrativeHost }}
+    administrativePort = {{ $depServices.hydra.administrativePort }}
+    administrativeProtocol = {{ $depServices.hydra.administrativeProtocol }}
+    administrativePrefix = {{ $depServices.hydra.administrativePrefix }}
+    thirdLoginRemember = {{ $depServices.hydra.thirdLoginRemember }}
+    [eacp]
+    publicHttpHost = {{ $depServices.eacp.publicHttpHost }}
+    publicHttpPort = {{ $depServices.eacp.publicHttpPort }}
+    publicHttpProtocol = {{ $depServices.eacp.publicHttpProtocol }}
+    privateHttpHost = {{ $depServices.eacp.privateHttpHost }}
+    privateHttpPort = {{ $depServices.eacp.privateHttpPort }}
+    privateHttpProtocol = {{ $depServices.eacp.privateHttpProtocol }}
+    eacpApiTimeout = {{ $depServices.eacp.eacpApiTimeout }}
+    [authentication]
+    publicHost = {{ $depServices.authentication.publicHost }}
+    publicPort = {{ $depServices.authentication.publicPort }}
+    publicProtocol = {{ $depServices.authentication.publicProtocol }}
+    privateHost = {{ $depServices.authentication.privateHost }}
+    privatePort = {{ $depServices.authentication.privatePort }}
+    privateProtocol = {{ $depServices.authentication.privateProtocol }}
+    [deploy-web]
+    serviceHost = {{ index $depServices "deploy-web" "serviceHost" }}
+    servicePort = {{ index $depServices "deploy-web" "servicePort" }}
+    serviceProtocol = {{ index $depServices "deploy-web" "serviceProtocol" }}
+    [user-management]
+    privateHost = {{ index $depServices "user-management" "privateHost" }}
+    privatePort = {{ index $depServices "user-management" "privatePort" }}
+    privateProtocol = {{ index $depServices "user-management" "privateProtocol" }}
+    [deploy-web-service]
+    privateHost = {{ index $depServices "deploy-web-service" "privateHost" }}
+    privatePort = {{ index $depServices "deploy-web-service" "privatePort" }}
+    privateProtocol = {{ index $depServices "deploy-web-service" "privateProtocol" }}

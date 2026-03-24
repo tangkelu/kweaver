@@ -1,0 +1,288 @@
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+{{- $env := include "mergedGlobalValues.env" . | fromYaml -}}
+{{- $accessAddress := include "mergedGlobalValues.accessAddress" . | fromYaml -}}
+{{- $flowAutomation := include "mergedGlobalValues.flowAutomation" . | fromYaml -}}
+{{- $flowO11yDataLog := index $flowAutomation "flow-o11y-data-log" | default dict -}}
+{{- $flowO11yExporters := index $flowO11yDataLog "exporters" | default dict -}}
+{{- $protonMq := index $flowO11yExporters "proton_mq" | default dict -}}
+{{- $protonMqConfig := index $protonMq "config" | default dict -}}
+{{- $renderFlowO11yExporters := deepCopy $flowO11yExporters -}}
+{{- if and (ne (default "" $depServices.mq.mqHost) "") (gt (int (default 0 $depServices.mq.mqPort)) 0) -}}
+{{- $_ := set $renderFlowO11yExporters "proton_mq" (mergeOverwrite (deepCopy $protonMq) (dict "config" (mergeOverwrite (deepCopy $protonMqConfig) (dict "broker_list" (list (printf "%s:%v" $depServices.mq.mqHost $depServices.mq.mqPort)))))) -}}
+{{- end -}}
+{{- if .Values.components.flowAutomation.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "dataflow.flowAutomation.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dataflow.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "dataflow.flowAutomation.fullname" . }}
+data:
+  TZ: {{ $env.timezone | quote }}
+  LANG: {{ $env.language | quote }}
+  SERVICE_LANG: {{ $flowAutomation.service.language | quote }}
+  API_SERVER_PORT: {{ $flowAutomation.service.port | quote }}
+  API_SERVER_PRIVATE_PORT: {{ add 2 $flowAutomation.service.port | quote }}
+  API_PREFIX: {{ $flowAutomation.service.prefix | quote }}
+  CODERUNNER_API_PORT: {{ add1 $flowAutomation.service.port | quote }}
+  CODERUNNER_API_PREFIX: {{ $flowAutomation.service.coderunnerPrefix | quote }}
+  DEBUG: {{ $flowAutomation.service.debug | quote }}
+  SERVER_PARSER_COUNT: {{ $flowAutomation.service.parserCount | quote }}
+  SERVER_EXECUTOR_TIMEOUT: {{ $flowAutomation.service.executorTimeout | quote }}
+  SERVER_SCHEDULE_TIMEOUT: {{ $flowAutomation.service.scheduleTimeout | quote }}
+  SERVER_LOWEST_EXECUTOR_COUNT: {{ $flowAutomation.service.lowestExecutorCount | quote }}
+  SERVER_LOW_EXECUTOR_COUNT: {{ $flowAutomation.service.lowExecutorCount | quote }}
+  SERVER_MEDIUM_EXECUTOR_COUNT: {{ $flowAutomation.service.mediumExecutorCount | quote }}
+  SERVER_HIGH_EXECUTOR_COUNT: {{ $flowAutomation.service.highExecutorCount | quote }}
+  SERVER_HIGHEST_EXECUTOR_COUNT: {{ $flowAutomation.service.highestExecutorCount | quote }}
+  SERVER_DEBUG_EXECUTOR_COUNT: {{ $flowAutomation.service.debugExcutorCount | quote }}
+  SERVER_LISTINS_COUNT: {{ $flowAutomation.service.listdagCount | quote }}
+  SERVER_MONGO_MAX_INLINE_SIZE: {{ $flowAutomation.service.mongoMaxInlineSize | quote }}
+  SERVER_DELETE_EXT_DATA_CRON: {{ $flowAutomation.service.deleteExtDataCron | quote }}
+  SERVER_DELETE_EXPIRED_TASK_CACHE_CRON: {{ $flowAutomation.service.deleteExpiredTaskCacheCron | quote }}
+  SERVER_DAG_INSTANCE_EVENT_MAX_INLINE_SIZE: {{ $flowAutomation.service.dagInstanceEventMaxInlineSize | quote }}
+  SERVER_DAG_INSTANCE_EVENT_ARCHIVE_POLICY: {{ $flowAutomation.service.dagInstanceEventArchivePolicy | quote }}
+  SERVER_STORAGE_PREFIX: {{ $flowAutomation.service.storagePrefix | quote }}
+  SERVER_EDITION: {{ $flowAutomation.service.edition | quote }}
+  SERVER_DB_TYPE: {{ $flowAutomation.service.dbType | quote }}
+  MONGODB_USER: {{ $depServices.mongodb.user | quote }}
+  MONGODB_HOST: {{ $depServices.mongodb.host | quote }}
+  MONGODB_PORT: {{ $depServices.mongodb.port | quote }}
+  MONGODB_NAME: automation
+  MONGODB_DSNDB: {{ $depServices.mongodb.options.authSource | quote }}
+  MONGODB_REPLICASET: {{ $depServices.mongodb.replicaSet | quote }}
+  MONGODB_DIRECT: {{ $depServices.mongodb.direct | quote }}
+  MONGODB_SSL: {{ $depServices.mongodb.ssl | quote }}
+  MONGODB_POOL_MAX: {{ $depServices.mongodb.maxPoolSize | quote }}
+  MONGODB_POOL_MIN: {{ $depServices.mongodb.minPoolSize | quote }}
+  EFAST_PUBLIC_HOST: {{ $depServices.efast.publicHttpHost | quote }}
+  EFAST_PUBLIC_PORT: {{ $depServices.efast.publicHttpPort | quote }}
+  EFAST_PRIVATE_HOST: {{ $depServices.efast.privateHttpHost | quote }}
+  EFAST_PRIVATE_PORT: {{ $depServices.efast.privateHttpPort | quote }}
+  EMETADATA_HOST: {{ $depServices.emetadata.host | quote }}
+  EMETADATA_PORT: {{ $depServices.emetadata.port | quote }}
+  DEPLOYSERVICE_HOST: {{ index $depServices "deploy-service" "HttpHost" | quote }}
+  DEPLOYSERVICE_PORT: {{ index $depServices "deploy-service" "HttpPort" | quote }}
+  DOCSHARE_PUBLIC_HOST: {{ index $depServices "doc-share" "publicHost" | quote }}
+  DOCSHARE_PUBLIC_PORT: {{ index $depServices "doc-share" "publicPort" | quote }}
+  DOCSHARE_PRIVATE_HOST: {{ index $depServices "doc-share" "privateHost" | quote }}
+  DOCSHARE_PRIVATE_PORT: {{ index $depServices "doc-share" "privatePort" | quote }}
+  OAuthAdminHost: {{ $depServices.hydra.administrativeHost | quote }}
+  OAuthAdminPort: {{ $depServices.hydra.administrativePort | quote }}
+  OAUTH_ADMIN_HOST: {{ $depServices.hydra.administrativeHost | quote }}
+  OAUTH_ADMIN_PORT: {{ $depServices.hydra.administrativePort | quote }}
+  OAUTH_ADMIN_PREFIX: {{ $depServices.hydra.administrativePrefix | quote }}
+  OAUTH_PUBLIC_HOST: {{ $depServices.hydra.publicHost | quote }}
+  OAUTH_PUBLIC_PORT: {{ $depServices.hydra.publicPort | quote }}
+  OAUTH_CLIENT_NAME: {{$flowAutomation.service.name}}
+  AUTHENTICATION_PUBLIC_HOST: {{ $depServices.authentication.publicHost | quote }}
+  AUTHENTICATION_PUBLIC_PORT: {{ $depServices.authentication.publicPort | quote }}
+  AUTHENTICATION_PRIVATE_HOST: {{ $depServices.authentication.privateHost | quote }}
+  AUTHENTICATION_PRIVATE_PORT: {{ $depServices.authentication.privatePort | quote }}
+  USERMANAGEMENT_PRIVATE_HOST: {{ index $depServices "user-management" "privateHost" | quote }}
+  USERMANAGEMENT_PRIVATE_PORT: {{ index $depServices "user-management" "privatePort" | quote }}
+  TIKA_HOST: {{ index $depServices "aladdin-tika" "host" | quote }}
+  TIKA_PORT: {{ index $depServices "aladdin-tika" "port" | quote }}
+  FASTTEXTANALYSIS_HOST: {{ index $depServices "fast-text-analysis" "host" | quote }}
+  FASTTEXTANALYSIS_PORT: {{ index $depServices "fast-text-analysis" "port" | quote }}
+  DOCUMENT_PUBLIC_HOST: {{ $depServices.document.publicHost | quote }}
+  DOCUMENT_PUBLIC_PORT: {{ $depServices.document.publicPort | quote }}
+  DOCUMENT_PRIVATE_HOST: {{ $depServices.document.privateHost | quote }}
+  DOCUMENT_PRIVATE_PORT: {{ $depServices.document.privatePort | quote }}
+  MQ_HOST: {{ $depServices.mq.mqHost | quote }}
+  MQ_PORT: {{ $depServices.mq.mqPort | quote }}
+  MQ_LOOKUPD_HOST: {{ $depServices.mq.mqLookupdHost | quote }}
+  MQ_LOOKUPD_PORT: {{ $depServices.mq.mqLookupdPort | quote }}
+  MQ_CONNECTORTYPE: {{ $depServices.mq.mqType | quote }}
+  MQ_PROTOCOL: {{ $depServices.mq.protocol | quote }}
+  T4TH_HOST: {{ index $depServices "ocr-engine" "t4th" "host" | quote }}
+  T4TH_PORT: {{ index $depServices "ocr-engine" "t4th" "port" | quote }}
+  T4TH_PROTOCOL: {{ index $depServices "ocr-engine" "t4th" "protocol" | quote }}
+  T4TH_ENABLE: {{ index $depServices "ocr-engine" "t4th" "switch" | quote }}
+  T4TH_CONNECTORTYPE: {{ index $depServices "ocr-engine" "t4th" "connectType" | quote }}
+  {{- if $depServices.observability.host }}
+  TELEMETRY_LOG_URL: "{{ $depServices.observability.protocol }}://{{ $depServices.observability.host  }}:{{ $depServices.observability.port }}/api/feed_ingester/v1/jobs/dip-o11y-log/events"
+  TELEMETRY_TRACE_URL: "{{ $depServices.observability.protocol }}://{{ $depServices.observability.host  }}:{{ $depServices.observability.port }}/api/feed_ingester/v1/jobs/dip-o11y-trace/events"
+  {{ else }}
+  TELEMETRY_LOG_URL: ""
+  TELEMETRY_TRACE_URL: ""
+  {{- end }}
+  TELEMETRY_LOG_LEVEL: {{ $depServices.observability.log_level | quote }}
+  TELEMETRY_SERVER_NAME: {{ .Chart.Name | quote }}
+  TELEMETRY_SERVER_VERSION: {{ .Chart.Version | quote }}
+  TELEMETRY_TRACE_ENABLED: {{ $depServices.observability.trace_enabled | quote }}
+  APPSTORE_PUBLIC_HOST: {{ index $depServices "appstore-public" "host" | quote }}
+  APPSTORE_PUBLIC_PORT: {{ index $depServices "appstore-public" "port" | quote }}
+  INTELLIINFO_PUBLIC_HOST: {{ $depServices.intelliinfo.publicHost | quote }}
+  INTELLIINFO_PUBLIC_PORT: {{ $depServices.intelliinfo.publicPort | quote }}
+  INTELLIINFO_PRIVATE_HOST: {{ $depServices.intelliinfo.privateHost | quote }}
+  INTELLIINFO_PRIVATE_PORT: {{ $depServices.intelliinfo.privatePort | quote }}
+  ECRON_HOST: {{ index $depServices "ecron-management" "host" | quote }}
+  ECRON_PORT: {{ index $depServices "ecron-management" "port" | quote }}
+  ECOTAG_PRIVATE_HOST: {{ $depServices.ecotag.privateHost | quote }}
+  ECOTAG_PRIVATE_PORT: {{ $depServices.ecotag.privatePort | quote }}
+  CONTENTAUTOMATION_PRIVATE_HOST: {{ index $depServices "content-automation" "privateHost" | quote }}
+  CONTENTAUTOMATION_PRIVATE_PORT: {{ index $depServices "content-automation" "privatePort" | quote }}
+  CONTENTAUTOMATION_PUBLIC_HOST: {{ index $depServices "content-automation" "publicHost" | quote }}
+  CONTENTAUTOMATION_PUBLIC_PORT: {{ index $depServices "content-automation" "publicPort" | quote }}
+  KCMC_HOST: {{ index $depServices "kc-mc" "host" | quote }}
+  KCMC_PORT: {{ index $depServices "kc-mc" "port" | quote }}  
+  KCMC_PRIVATE_HOST: {{ index $depServices "kc-mc" "privateHost" | quote }}
+  KCMC_PRIVATE_PORT: {{ index $depServices "kc-mc" "privatePort" | quote }}
+  OSSGATEWAY_PRIVATE_HOST: {{ $depServices.ossgatewaymanager.privateHost | quote }}
+  OSSGATEWAY_PRIVATE_PORT: {{ $depServices.ossgatewaymanager.privatePort | quote }}
+  DUMPLOG_DAG_THRESHOLD: {{ $flowAutomation.service.dagThreshold | quote }}
+  DUMPLOG_TASK_THRESHOLD: {{ $flowAutomation.service.taskThreshold | quote }}
+  DUMPLOG_KEEP_HISTORY: {{ $flowAutomation.service.keepHistory | quote }}
+  DUMPLOG_CRONJOB_EXPRESSION: {{ $flowAutomation.service.deleteLogsCron | quote }}
+  REDIS_CLUSTER_MODE: {{ $depServices.redis.connectType | quote }}
+  {{- if eq $depServices.redis.connectType "sentinel"}}
+  REDIS_HOST: {{ $depServices.redis.connectInfo.sentinelHost | quote }}
+  REDIS_PORT: {{ $depServices.redis.connectInfo.sentinelPort | quote }}
+  REDIS_MASTER_GROUPNAME: {{ $depServices.redis.connectInfo.masterGroupName }}
+  {{- end}}
+  {{- if eq $depServices.redis.connectType "master-slave"}}
+  REDIS_HOST: {{ $depServices.redis.connectInfo.masterHost | quote }}
+  REDIS_PORT: {{ $depServices.redis.connectInfo.masterPort | quote }}
+  REDIS_SLAVE_HOST: {{ $depServices.redis.connectInfo.slaveHost | quote }}
+  REDIS_SLAVE_PORT: {{ $depServices.redis.connectInfo.slavePort | quote }}
+  {{- end}}
+  {{- if eq $depServices.redis.connectType "standalone"}}
+  REDIS_HOST: {{ $depServices.redis.connectInfo.host | quote }}
+  REDIS_PORT: {{ $depServices.redis.connectInfo.port | quote }}
+  {{- end}}
+  {{- if eq $depServices.redis.connectType "cluster"}}
+  REDIS_HOST: {{ $depServices.redis.connectInfo.host | quote }}
+  REDIS_PORT: {{ $depServices.redis.connectInfo.port | quote }}
+  {{- end}}
+  WARNING_INTERNAL: {{ $flowAutomation.service.warningInternal | quote }}
+  SHAREMGNT_HOST: {{ $depServices.sharemgnt.host | quote }}
+  SHAREMGNT_PORT: {{ $depServices.sharemgnt.port | quote }}
+  COGNITIVEASSISTANT_HOST: {{ index $depServices "cognitive-assistant" "host" | quote }}
+  COGNITIVEASSISTANT_PORT: {{ index $depServices "cognitive-assistant" "port" | quote }}
+  DOCSET_PRIVATE_HOST: {{ $depServices.docset.privateHost | quote }}
+  DOCSET_PRIVATE_PORT: {{ $depServices.docset.privatePort | quote }}
+  DOCSET_PUBLIC_HOST: {{ $depServices.docset.publicHost | quote }}
+  DOCSET_PUBLIC_PORT: {{ $depServices.docset.publicPort | quote }}
+  PERSONALCONFIG_PUBLIC_HOST: {{ index $depServices "personal-config" "publicHost" | quote }}
+  PERSONALCONFIG_PUBLIC_PORT: {{ index $depServices "personal-config" "publicPort" | quote }}
+  PERSONALCONFIG_PRIVATE_HOST: {{ index $depServices "personal-config" "privateHost" | quote }}
+  PERSONALCONFIG_PRIVATE_PORT: {{ index $depServices "personal-config" "privatePort" | quote }}
+  METADATA_PUBLIC_HOST: {{ $depServices.metadata.publicHost | quote }}
+  METADATA_PUBLIC_PORT: {{ $depServices.metadata.publicPort | quote }}
+  METADATA_PRIVATE_HOST: {{ $depServices.metadata.privateHost | quote }}
+  METADATA_PRIVATE_PORT: {{ $depServices.metadata.privatePort | quote }}
+  SPEECHMODEL_PRIVATE_HOST: {{ index $depServices "speech-model" "privateHost" | quote }}
+  SPEECHMODEL_PRIVATE_PORT: {{ index $depServices "speech-model" "privatePort" | quote }}
+  DB_HOST: {{ $depServices.rds.host | quote }}
+  DB_PORT: {{ $depServices.rds.port | quote }}
+  DB_TYPE: {{ $depServices.rds.type | quote }}
+  DB_NAME: {{ $depServices.rds.database | quote }}
+  DB_USER: {{ $depServices.rds.user | quote }}
+  UIE_PRIVATE_HOST: {{ $depServices.uie.privateHost | quote }}
+  UIE_PRIVATE_PORT: {{ $depServices.uie.privatePort | quote }}
+  ANYDATA_PROTOCOL: {{ $depServices.anydata.protocol | quote }}
+  ANYDATA_HOST: {{ $depServices.anydata.host | quote }}
+  ANYDATA_PORT: {{ $depServices.anydata.port | quote }}
+  ANYDATA_APPID: {{ $depServices.anydata.appid | quote }}
+  ANYDATA_MODEL: {{ $depServices.anydata.model | quote }}
+  CODERUNNER_PRIVATE_HOST: {{ $depServices.coderunner.privateHost | quote }}
+  CODERUNNER_PRIVATE_PORT: {{ $depServices.coderunner.privatePort | quote }}
+  DATAFLOWTOOLS_PRIVATE_HOST: {{ $depServices.dataflowtools.privateHost | quote }}
+  DATAFLOWTOOLS_PRIVATE_PORT: {{ $depServices.dataflowtools.privatePort | quote }}
+  AGENTOPERATORINTEGRATION_HOST: {{ $depServices.agentoperatorintegration.host | quote }}
+  AGENTOPERATORINTEGRATION_PORT: {{ $depServices.agentoperatorintegration.port | quote }}
+  MFMODELMANAGER_HOST: {{ $depServices.mfmodelmanager.host | quote }}
+  MFMODELMANAGER_PORT: {{ $depServices.mfmodelmanager.port | quote }}
+  AGENTFACTORY_HOST: {{ $depServices.agentfactory.host | quote }}
+  AGENTFACTORY_PORT: {{ $depServices.agentfactory.port | quote }}
+  KNKNOWLEDGEDATA_HOST: {{ $depServices.knknowledgedata.host | quote }}
+  KNKNOWLEDGEDATA_PORT: {{ $depServices.knknowledgedata.port | quote }}
+  ECOCONFIG_PUBLIC_HOST: {{ index $depServices "ecoconfig" "publicHost" | quote }}
+  ECOCONFIG_PUBLIC_PORT: {{ index $depServices "ecoconfig" "publicPort" | quote }}
+  ECOCONFIG_PRIVATE_HOST: {{ index $depServices "ecoconfig" "privateHost" | quote }}
+  ECOCONFIG_PRIVATE_PORT: {{ index $depServices "ecoconfig" "privatePort" | quote }}
+  AGENTAPP_HOST: {{ index $depServices "agentapp" "host" | quote }}
+  AGENTAPP_PORT: {{ index $depServices "agentapp" "port" | quote }}
+  MDL_UNIQUERY_HOST: {{ $depServices.mdl_uniquery.host | quote }}
+  MDL_UNIQUERY_PORT: {{ $depServices.mdl_uniquery.port | quote }}
+  MDL_DATAMODEL_HOST: {{ $depServices.mdl_datamodel.host | quote }}
+  MDL_DATAMODEL_PORT: {{ $depServices.mdl_datamodel.port | quote }}
+  MDL_DATAPIPELINE_HOST: {{ index $depServices "flow-stream-data-pipeline" "host" | quote }}
+  MDL_DATAPIPELINE_PORT: {{ index $depServices "flow-stream-data-pipeline" "port" | quote }}
+  AUTHORIZATION_PRIVATE_HOST: {{ $depServices.authorization.privateHost | quote }}
+  AUTHORIZATION_PRIVATE_PORT: {{ $depServices.authorization.privatePort | quote }}
+  CONTENTPIPELINE_PRIVATE_HOST: {{ $depServices.contentpipeline.privateHost | quote }}
+  CONTENTPIPELINE_PRIVATE_PORT: {{ $depServices.contentpipeline.privatePort | quote }}
+
+  KAFKA_SESSION_TIMEOUT_MS: {{ $flowAutomation.kafka.sessionTimeoutMs | quote }}
+  KAFKA_SOCKET_TIMEOUT_MS: {{ $flowAutomation.kafka.socketTimeoutMs | quote }}
+  KAFKA_MAX_POLL_INTERVAL_MS: {{ $flowAutomation.kafka.maxPollIntervalMs | quote }}
+  KAFKA_HEARTBEAT_INTERVAL_MS: {{ $flowAutomation.kafka.heartbeatIntervalMs | quote }}
+  KAFKA_TRANSACTION_TIMEOUT_MS: {{ $flowAutomation.kafka.transactionTimeoutMs | quote }}
+  KAFKA_RETENTION_TIME: {{ $flowAutomation.kafka.retentionTime | quote }}
+  KAFKA_RETENTION_SIZE: {{ $flowAutomation.kafka.retentionSize | quote }}
+  KAFKA_AUTO_OFFSET_RESET: {{ $flowAutomation.kafka.autoOffsetReset | quote }}
+  KAFKA_ADMIN_CLIENT_REQUEST_TIMEOUT_MS: {{ $flowAutomation.kafka.adminClientRequestTimeoutMs | quote }}
+  KAFKA_ADMIN_CLIENT_OPERATION_TIMEOUT_MS: {{ $flowAutomation.kafka.adminClientOperationTimeoutMs | quote }}
+  KAFKA_RETRIES: {{ $flowAutomation.kafka.retries | quote }}
+  KAFKA_RETRY_BACKOFF_MS: {{ $flowAutomation.kafka.retryBackoffMs | quote }}
+
+  OPENSEARCH_HOST: {{ $depServices.opensearch.host | quote }}
+  OPENSEARCH_PORT: {{ $depServices.opensearch.port | quote }}
+  OPENSEARCH_PROTOCOL: {{ $depServices.opensearch.protocol | quote }}
+  OPENSEARCH_USER: {{ $depServices.opensearch.user | quote }}
+  OPENSEARCH_PASSWORD: {{ $depServices.opensearch.password | quote }}
+  DP_DATASOURCE_HOST: {{ $depServices.dp_datasource.host | quote }}
+  DP_DATASOURCE_PORT: {{ $depServices.dp_datasource.port | quote }}
+  DP_DATASOURCE_PROTOCOL: {{ $depServices.dp_datasource.protocol | quote }}
+
+  STRUCTUREEXTRACTOR_USE_MINERU: {{ index $depServices "structure-extractor" "useMineru" | quote }}
+  STRUCTUREEXTRACTOR_MINERU_BASE_URL: {{ index $depServices "structure-extractor" "mineruBaseURL" | quote }}
+  STRUCTUREEXTRACTOR_MINERU_TOKEN: {{ index $depServices "structure-extractor" "mineruToken" | quote }}
+  STRUCTUREEXTRACTOR_PRIVATE_HOST: {{ index $depServices "structure-extractor" "privateHost" | quote }}
+  STRUCTUREEXTRACTOR_PRIVATE_PORT: {{ index $depServices "structure-extractor" "privatePort" | quote }}
+  STRUCTUREEXTRACTOR_OUTPUT_DIR: {{ index $depServices "structure-extractor" "outputDir" | quote }}
+  STRUCTUREEXTRACTOR_BACKEND: {{ index $depServices "structure-extractor" "backend" | quote }}
+  STRUCTUREEXTRACTOR_SERVER_URL: {{ index $depServices "structure-extractor" "serverUrl" | quote }}
+  STRUCTUREEXTRACTOR_FILE_HOST: {{ index $depServices "structure-extractor" "fileHost" | quote }}
+  STRUCTUREEXTRACTOR_FILE_PORT: {{ index $depServices "structure-extractor" "filePort" | quote }}
+
+  OCR_PRIVATE_HOST: {{ $depServices.ocr.privateHost | quote }}
+  OCR_PRIVATE_PORT: {{ $depServices.ocr.privatePort | quote }}
+
+  MFMODELAPI_HOST: {{ $depServices.mfmodelapi.host | quote }}
+  MFMODELAPI_PORT: {{ $depServices.mfmodelapi.port | quote }}
+
+  BUSINESS_DOMAIN_HOST: {{ index $depServices "business-system-service" "host" | quote }}
+  BUSINESS_DOMAIN_PORT: {{ index $depServices "business-system-service" "port" | quote }}
+
+  ACCESS_ADDRESS_HOST: {{ $accessAddress.host | quote }}
+  ACCESS_ADDRESS_PORT: {{ $accessAddress.port | quote }}
+  ACCESS_ADDRESS_SCHEMA: {{ $accessAddress.scheme | quote }}
+  ACCESS_ADDRESS_PATH: {{ $accessAddress.path | quote }}
+
+  SANDBOX_HOST: {{ $depServices.sandbox.host | quote }}
+  SANDBOX_PORT: {{ $depServices.sandbox.port | quote }}
+  SANDBOX_TEMPLATE_ID: {{ $depServices.sandbox.template_id | quote }}
+  SANDBOX_CPU: {{ $depServices.sandbox.cpu | quote }}
+  SANDBOX_MEMORY: {{ $depServices.sandbox.memory | quote }}
+  SANDBOX_DISK: {{ $depServices.sandbox.disk | quote }}
+  SANDBOX_TIMEOUT: {{ $depServices.sandbox.timeout | quote }}
+
+  flow_o11y_data.yaml: |
+    log_level: {{ index $flowO11yDataLog "log_level" }}
+    {{- with $renderFlowO11yExporters }}
+    exporters:
+    {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+  ACTION_CONFIG_YAML: {{ $flowAutomation.actionConfigYaml }}
+  ACTION_CONFIG: |
+    {{ $flowAutomation.actionConfig | toYaml | nindent 4 }}
+
+  S3: |
+    {{ $flowAutomation.s3 | toYaml | nindent 4 }}
+{{- end }}

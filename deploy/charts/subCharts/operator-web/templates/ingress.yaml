@@ -1,0 +1,19 @@
+---
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.moduleName }}-ingress
+  namespace: {{ .Release.Namespace }}
+spec:
+  ingressClassName: {{ index $depServices "class-443" "ingressClass" }}
+  rules:
+    - http:
+        paths:
+          - backend:
+              service:
+                name: {{ .Values.moduleName }}
+                port:
+                  number: {{ .Values.service.web.port }}
+            path: {{ .Values.service.web.ingress.interface.path }}
+            pathType: Prefix

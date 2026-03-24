@@ -1,0 +1,34 @@
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ .Values.moduleName }}-dependant-configmap
+    namespace: {{ .Release.Namespace }}
+data:
+    mdlconfig.json: |
+        {
+            "services": {
+                {{- with $depServices.mq }}
+                "kafka": {
+                    "mqType": "{{ .mqType }}",
+                    "namespace": "",
+                    "service": "{{ .mqHost }}",
+                    "ports": {
+                        "default": {{ .mqPort }}
+                    },
+                    "protocol": "{{ .protocol }}",
+                    "username": "{{ .auth.username }}",
+                    "password": "{{ .auth.password }}",
+                    "tenant": "{{ .tenant }}",
+                    "encryptionType": "{{ .encryptionType }}"
+                }
+              {{- end }}
+            }
+        }
+
+    dm_svc.conf: |
+        TIME_ZON=(480)
+        LANGUAGE=(cn)
+        DM=({{ $depServices.rds.host }})
+        [DM]
+        LOGIN_MODE=(1)

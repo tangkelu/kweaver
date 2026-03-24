@@ -1,0 +1,70 @@
+# Default values for policy-server.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+nodeSelector: {}
+namespace:
+image:
+  registry: ""
+  repository: "as/thirdparty-message-plugin"
+  tag: "0.3.0-23226c0-20260206.1"
+  pullPolicy: IfNotPresent
+service:
+  enableDualStack: false
+  type: ClusterIP
+  port: 9610
+  debug: false
+  name: thirdparty-message-plugin
+  logger:
+    formatter: "%(asctime)s %(levelname)s %(pathname)s:%(lineno)d %(message)s"
+  language: zh_CN
+  aclFilePath: /sysvol/conf/thirdparty-message-plugin-oauth.yaml
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  livenessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 5
+env:
+  language: en_US.UTF-8
+  timezone: Asia/Shanghai
+depServices:
+  rds:
+    system_id: ''
+    user: ""
+    password: ""
+    host: mariadb-mariadb-master.resource
+    port: 3330
+    type: mysql
+    name: thirdparty_message
+  hydra:
+    publicHost: hydra-public
+    publicPort: 4444
+    publicProtocol: http
+    administrativeHost: hydra-admin
+    administrativePort: 4445
+    administrativeProtocol: http
+  ossgatewaymanager:
+    protocol: http
+    privateHost: ossgatewaymanager-private
+    privatePort: 9002
+  mq: {}
+  user-management:
+    privateHost: user-management-private
+    privatePort: 30980
+    privateProtocol: http
+  deploy-service:
+    HttpHost: deploy-service
+    HttpPort: 9703
+resources:
+  requests:
+    cpu: 38m
+    memory: 267Mi
+  limits:
+    cpu: 2
+    memory: 1Gi

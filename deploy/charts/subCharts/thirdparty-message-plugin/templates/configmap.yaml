@@ -1,0 +1,58 @@
+{{- $env := include "mergedGlobalValues.env" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+{{- $accessAddress := include "mergedGlobalValues.accessAddress" . | fromYaml -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "thirdparty-message-plugin.server" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ template "thirdparty-message-plugin.server" . }}
+data:
+  {{- with .Values }}
+  DEBUG: {{ .service.debug | quote }}
+  API_SERVER_PORT: {{ .service.port | quote }}
+  CONFIG_FILE_PATH: {{ .service.aclFilePath | quote }}
+  SERVICE_NAME: {{.service.name | quote }}
+
+  OSSGATEWAY_PROTOCOL: {{ .depServices.ossgatewaymanager.protocol | quote }}
+  OSSGATEWAY_PRIVATE_HOST: {{ .depServices.ossgatewaymanager.privateHost | quote }}
+  OSSGATEWAY_PRIVATE_PORT: {{ .depServices.ossgatewaymanager.privatePort | quote }}
+
+  HYDRA_PUBLIC_PROTOCOL: {{ .depServices.hydra.publicProtocol | quote }}
+  HYDRA_PUBLIC_HOST: {{ .depServices.hydra.publicHost | quote }}
+  HYDRA_PUBLIC_PORT: {{ .depServices.hydra.publicPort | quote }}
+
+  HYDRA_ADMIN_PROTOCOL: {{ .depServices.hydra.administrativeProtocol | quote }}
+  HYDRA_ADMIN_HOST: {{ .depServices.hydra.administrativeHost | quote }}
+  HYDRA_ADMIN_PORT: {{ .depServices.hydra.administrativePort | quote }}
+
+  {{- if contains "," .depServices.rds.host }}
+  DB_HOST: DM
+  {{- else}}
+  DB_HOST: {{ .depServices.rds.host | quote }}
+  {{- end}}
+  DB_PORT: {{ .depServices.rds.port | quote }}
+  DB_NAME: {{ .depServices.rds.name | quote }}
+  DB_USER: {{ .depServices.rds.user | quote }}
+  DB_TYPE: {{ .depServices.rds.type | quote }}
+  DB_SYSTEM_ID: {{ .depServices.rds.system_id | quote }}
+
+  LANGUAGE: {{ .service.language | quote }}
+
+  {{- end }}
+  USER_MANAGEMENT_PRIVATE_PROTOCOL: {{ index .Values "depServices" "user-management" "privateProtocol" | quote }}
+  USER_MANAGEMENT_PRIVATE_HOST: {{ index .Values "depServices" "user-management" "privateHost" | quote }}
+  USER_MANAGEMENT_PRIVATE_PORT: {{ index .Values "depServices" "user-management" "privatePort" | quote }}
+  DEPLOY_SERVICE_HOST: {{ index .Values "depServices" "deploy-service" "HttpHost" | quote }}
+  DEPLOY_SERVICE_PORT: {{ index .Values "depServices" "deploy-service" "HttpPort" | quote }}
+
+  dm_svc.conf: |
+    TIME_ZON=(480)
+    LANGUAGE=(cn)
+    DM={{ printf "(%s)" .Values.depServices.rds.host }}
+    [DM]
+    LOGIN_MODE=(1)
+
+  mq_config.yaml: |
+    {{- toYaml .Values.depServices.mq | nindent 4 }}

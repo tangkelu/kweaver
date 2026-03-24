@@ -1,0 +1,10 @@
+apiVersion: v1
+appVersion: 0.4.0-d64c9d4-20260313.1
+description: A Helm chart oauth2-ui for Kubernetes
+keywords:
+- oauth2-ui
+- AnyShare7.0
+name: oauth2-ui
+sources:
+- https://gitlab.aishu.cn/AnyShareFamily/helm-charts/oauth2-ui.git
+version: 0.4.0-d64c9d4-20260313.1

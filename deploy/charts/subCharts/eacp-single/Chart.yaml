@@ -1,0 +1,8 @@
+apiVersion: v1
+appVersion: 0.3.0-b6f47ca-20260206.2
+description: A Helm eacp-single service chart for Kubernetes
+keywords:
+- eacp-single
+- InformationSecurityFabric
+name: eacp-single
+version: 0.3.0-b6f47ca-20260206.2

@@ -1,0 +1,11 @@
+apiVersion: v2
+appVersion: 0.4.0-58fc0f7.1765898
+description: Unified Helm chart for dataflow services (ecron, flow-automation, flow-stream-data-pipeline)
+keywords:
+- dataflow
+- ecron
+- flow-automation
+- flow-stream-data-pipeline
+name: dataflow
+type: application
+version: 0.4.0

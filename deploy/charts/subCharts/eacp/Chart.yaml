@@ -1,0 +1,8 @@
+apiVersion: v1
+appVersion: 0.4.0-7274ea7-20260313.2
+description: A Helm eacp service chart for Kubernetes
+keywords:
+- eacp
+- InformationSecurityFabric
+name: eacp
+version: 0.4.0-7274ea7-20260313.2

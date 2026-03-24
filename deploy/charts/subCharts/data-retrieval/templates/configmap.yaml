@@ -1,0 +1,58 @@
+{{- $env := include "mergedGlobalValues.env" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+{{- $accessAddress := include "mergedGlobalValues.accessAddress" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+apiVersion: v1
+data:
+  OPENSEARCH_HOST: {{ $depServices.opensearch.host | quote}}
+  OPENSEARCHRED: {{ $depServices.opensearch.read | quote}}
+  OPENSEARCHWRITE: {{ $depServices.opensearch.write | quote}}
+  OPENSEARCH_PORT: {{ quote $depServices.opensearch.port }}
+  OPENSEARCH_USER: {{ $depServices.opensearch.user | quote}}
+  OPENSEARCH_PASS: {{ $depServices.opensearch.password | quote}}
+  REDISCLUSTERMODE: {{ $depServices.redis.connectType | quote}}
+  REDISUSER: {{ $depServices.redis.connectInfo.username | quote}}
+  REDISPASS: {{ $depServices.redis.connectInfo.password | quote}}
+  {{- if eq $depServices.redis.connectType "sentinel" }}
+  REDISHOST: {{ quote $depServices.redis.connectInfo.sentinelHost }}
+  REDISPORT: {{ quote $depServices.redis.connectInfo.sentinelPort }}
+  SENTINELMASTER: {{ $depServices.redis.connectInfo.masterGroupName | quote }}
+  SENTINELUSER: {{ $depServices.redis.connectInfo.sentinelUsername | quote}}
+  SENTINELPASS: {{ $depServices.redis.connectInfo.sentinelPassword | quote}}
+  {{- else if eq $depServices.redis.connectType "standalone" }}
+  REDISHOST: {{ quote $depServices.redis.connectInfo.host }}
+  REDISPORT: {{ quote $depServices.redis.connectInfo.port }}
+  {{- else if eq $depServices.redis.connectType "master-slave" }}
+  REDISREADHOST: {{ $depServices.redis.connectInfo.slaveHost | quote}}
+  REDISREADPORT: {{ quote $depServices.redis.connectInfo.slavePort }}
+  REDISREADUSER: {{ $depServices.redis.connectInfo.username | quote}}
+  REDISREADPASS: {{ $depServices.redis.connectInfo.password | quote}}
+  REDISWRITEHOST: {{ $depServices.redis.connectInfo.masterHost | quote}}
+  REDISWRITEPORT: {{ quote $depServices.redis.connectInfo.masterPort }}
+  REDISWRITEUSER: {{ $depServices.redis.connectInfo.username | quote}}
+  REDISWRITEPASS: {{ $depServices.redis.connectInfo.password | quote}}
+  {{- end }}
+  # 授权服务
+  OAUTHPUBLICHOST: {{ $depServices.hydra.publicHost | quote }}
+  OAUTHPUBLICPORT: {{ $depServices.hydra.publicPort | quote }}
+  OAUTHADMINHOST: {{ $depServices.hydra.administrativeHost | quote }}
+  OAUTHADMINPORT: {{ $depServices.hydra.administrativePort | quote }}
+  # user-management服务
+  USERMANAGEMENTPUBLICHOST: {{ $depServices.user_management.publicHost | quote }}
+  USERMANAGEMENTPUBLICPORT: {{ $depServices.user_management.publicPort | quote }}
+  USERMANAGEMENTPRIVATEHOST: {{ $depServices.user_management.privateHost | quote }}
+  USERMANAGEMENTPRIVATEPORT: {{ $depServices.user_management.privatePort | quote }}
+
+  #embeddings
+  EMB_URL: {{ $depServices.mf_model_api.embeddingUrl | quote }}
+  EMBEDDING_DIMENSION: {{ $depServices.mf_model_api.embeddingDimension | quote }}
+  #reranker
+  RERANKER_URL: {{ $depServices.mf_model_api.rerank_url | quote }}
+  # sandbox
+  SANDBOX_URL: {{ $depServices.sandbox.url | quote }}
+
+
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-yaml
+  namespace: {{ .Release.Namespace }}

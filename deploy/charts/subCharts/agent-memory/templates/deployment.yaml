@@ -1,0 +1,302 @@
+{{- $env := include "mergedGlobalValues.env" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.image.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ include "mergedGlobalValues.replicaCount" . }}
+  selector:
+    matchLabels:
+      app: {{ .Values.image.name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.image.name }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum | trunc 10 | quote }}
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ include "mergedGlobalValues.image" . }}"
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: public-port
+              containerPort: {{ .Values.service.agentMemory.port }}
+          livenessProbe:
+{{ toYaml .Values.probe.livenessProbe | indent 12 }}
+          readinessProbe:
+{{ toYaml .Values.probe.readinessProbe | indent 12 }}
+          startupProbe:
+{{ toYaml .Values.probe.startupProbe | indent 12 }}
+          volumeMounts:
+            - name: host-time
+              mountPath: /etc/localtime
+            - name: {{ .Values.image.name }}-rds-conf
+              mountPath: /tmp/rds_conf
+          env:
+            - name: RDSHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: RDSHOST
+            - name: RDSPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: RDSPORT
+            - name: RDSUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: RDSUSER
+            - name: RDSPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: RDSPASS
+            - name: DB_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: DB_TYPE
+            - name: RDSDBNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: RDSDBNAME
+            - name: REDISCLUSTERMODE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: REDISCLUSTERMODE
+            - name: REDISUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: REDISUSER
+            - name: REDISPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: REDISPASS
+            {{- if ne $depServices.redis.connectType "master-slave" }}
+            - name: REDISHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: REDISHOST
+            - name: REDISPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: REDISPORT
+            {{- end }}
+            {{- if eq $depServices.redis.connectType "sentinel" }}
+            - name: SENTINELMASTER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: SENTINELMASTER
+            - name: SENTINELUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: SENTINELUSER
+            - name: SENTINELPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: SENTINELPASS
+            {{- end }}
+            {{- if eq $depServices.redis.connectType "master-slave" }}
+            - name: REDISREADHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: REDISREADHOST
+            - name: REDISREADPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: REDISREADPORT
+            - name: REDISREADUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: REDISREADUSER
+            - name: REDISREADPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: REDISREADPASS
+            - name: REDISWRITEHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: REDISWRITEHOST
+            - name: REDISWRITEPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: REDISWRITEPORT
+            - name: REDISWRITEUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: REDISWRITEUSER
+            - name: REDISWRITEPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: REDISWRITEPASS
+            {{- end }}
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP # 宿主机IP
+            - name: TRACE_URL
+              valueFrom:
+                configMapKeyRef:
+                  key: TRACE_URL
+                  name: {{ .Values.image.name }}-yaml
+            - name: TRACE_ENABLE
+              valueFrom:
+                configMapKeyRef:
+                  key: TRACE_ENABLE
+                  name: {{ .Values.image.name }}-yaml
+            - name: OPENSEARCH_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: OPENSEARCH_HOST
+            - name: OPENSEARCHWRITE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: OPENSEARCHWRITE
+            - name: OPENSEARCHREAD
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: OPENSEARCHRED
+            - name: OPENSEARCH_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: OPENSEARCH_PORT
+            - name: OPENSEARCH_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: OPENSEARCH_USER
+            - name: OPENSEARCH_PASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.image.name }}-yaml
+                  key: OPENSEARCH_PASS
+            - name: GRAPHDB_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  key: GRAPHDB_TYPE
+                  name: {{ .Values.image.name }}-yaml
+            - name: GRAPHDB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  key: GRAPHDB_HOST
+                  name: {{ .Values.image.name }}-yaml
+            - name: GRAPHDB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  key: GRAPHDB_PORT
+                  name: {{ .Values.image.name }}-yaml
+            - name: GRAPHDB_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: GRAPHDB_USER
+                  name: {{ .Values.image.name }}-yaml
+            - name: GRAPHDB_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: GRAPHDB_PASSWORD
+                  name: {{ .Values.image.name }}-yaml
+            {{- if eq $depServices.graphDatabase.type "nebulaGraph" }}
+            - name: GRAPHDB_READ_ONLY_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: GRAPHDB_READ_ONLY_USER
+                  name: {{ .Values.image.name }}-yaml
+            - name: GRAPHDB_READ_ONLY_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: GRAPHDB_READ_ONLY_PASSWORD
+                  name: {{ .Values.image.name }}-yaml
+            {{- end }}
+            - name: EMBEDDING_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  key: EMBEDDING_MODEL
+                  name: {{ .Values.image.name }}-yaml
+            - name: EMB_URL
+              valueFrom:
+                configMapKeyRef:
+                  key: EMB_URL
+                  name: {{ .Values.image.name }}-yaml
+            - name: EMBEDDING_DIMENSION
+              valueFrom:
+                configMapKeyRef:
+                  key: EMBEDDING_DIMENSION
+                  name: {{ .Values.image.name }}-yaml
+            - name: RERANK_URL
+              valueFrom:
+                configMapKeyRef:
+                  key: RERANK_URL
+                  name: {{ .Values.image.name }}-yaml
+            - name:  DM_SVC_PATH
+              value: /tmp/rds_conf/
+            - name: LLM_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  key: LLM_BASE_URL
+                  name: {{ .Values.image.name }}-yaml
+            - name: LLM_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  key: LLM_MODEL
+                  name: {{ .Values.image.name }}-yaml
+            - name: EMBEDDING_MODEL_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  key: EMBEDDING_MODEL_BASE_URL
+                  name: {{ .Values.image.name }}-yaml
+            - name: EMBEDDING_MODEL_DIMS
+              valueFrom:
+                configMapKeyRef:
+                  key: EMBEDDING_MODEL_DIMS
+                  name: {{ .Values.image.name }}-yaml
+            - name: RERANK_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  key: RERANK_MODEL
+                  name: {{ .Values.image.name }}-yaml
+      volumes:
+        - name: host-time
+          hostPath:
+            path: /etc/localtime
+        - name: {{ .Values.image.name }}-rds-conf
+          configMap:
+            name: {{ .Values.image.name }}-yaml
+            items:
+            - key: dm_svc.conf
+              path: dm_svc.conf

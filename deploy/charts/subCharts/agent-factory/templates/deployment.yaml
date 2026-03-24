@@ -1,0 +1,329 @@
+{{- $env := include "mergedGlobalValues.env" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+{{- $imageRegistry := include "mergedGlobalValues.imageRegistry" . -}}
+{{- if semverCompare ">=1.16-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: apps/v1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Deployment
+metadata:
+  name: {{ .Values.moduleName }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.moduleName }}
+  replicas: {{ include "mergedGlobalValues.replicaCount" . }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        checksum/configmap: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      labels:
+        app: {{ .Values.moduleName }}
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - {{ .Values.moduleName }}
+            topologyKey: "kubernetes.io/hostname"
+      {{- if ne .Values.runMode "dev" }}
+      {{- if eq .Values.enableSecurityContext true }}
+      {{- with .Values.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ .Values.moduleName }}
+          {{- if ne .Values.runMode "dev" }}
+          image: "{{ $imageRegistry }}/{{ .Values.image.service.repository }}:{{ .Values.image.service.tag }}"
+          imagePullPolicy: {{ .Values.image.service.pullPolicy }}
+          {{- else}}
+          image: "acr.aishu.cn/client/godevenv:1.16.2"
+          {{- end}}
+
+          env:
+              - name: AGENT_FACTORY_DISABLE_PMS_CHECK
+                value: {{ $env.disable_pms_check | quote }}
+              - name: SERVICE_NAME
+                value: {{ .Values.moduleName }}
+              - name: DB_TYPE
+                value: {{ $depServices.rds.type | quote }}
+            {{- if .Values.service.loggerOutput}}
+              - name: LOGOUT
+                value: {{ .Values.service.loggerOutput }}
+            {{- end}}
+            {{- if $env.language}}
+              - name: LANG
+                value: {{ $env.language }}
+              - name: LC_ALL
+                value: {{ $env.language }}
+            {{- end}}
+            {{- if $env.timezone}}
+              - name: TZ
+                value: {{ $env.timezone }}
+            {{- end}}
+              - name: RDSHOST
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: RDSHOST
+              - name: RDSPORT
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: RDSPORT
+              - name: RDSUSER
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: RDSUSER
+              - name: RDSPASS
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: RDSPASS
+
+              - name: RDSDBNAME
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: RDSDBNAME
+              - name: OPENSEARCH_HOST
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: OPENSEARCH_HOST
+              - name: OPENSEARCHWRITE
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: OPENSEARCHWRITE
+              - name: OPENSEARCHREAD
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: OPENSEARCHRED
+              - name: OPENSEARCH_PORT
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: OPENSEARCH_PORT
+              - name: OPENSEARCH_USER
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: OPENSEARCH_USER
+              - name: OPENSEARCH_PASS
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: OPENSEARCH_PASS
+              - name: REDISCLUSTERMODE
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: REDISCLUSTERMODE
+              - name: REDISUSER
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: REDISUSER
+              - name: REDISPASS
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: REDISPASS
+              {{- if ne $depServices.redis.connectType "master-slave" }}
+              - name: REDISHOST
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: REDISHOST
+              - name: REDISPORT
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: REDISPORT
+              {{- end }}
+              {{- if eq $depServices.redis.connectType "sentinel" }}
+              - name: SENTINELMASTER
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: SENTINELMASTER
+              - name: SENTINELUSER
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: SENTINELUSER
+              - name: SENTINELPASS
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: SENTINELPASS
+              {{- end }}
+              {{- if eq $depServices.redis.connectType "master-slave" }}
+              - name: REDISREADHOST
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: REDISREADHOST
+              - name: REDISREADPORT
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: REDISREADPORT
+              - name: REDISREADUSER
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: REDISREADUSER
+              - name: REDISREADPASS
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: REDISREADPASS
+              - name: REDISWRITEHOST
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: REDISWRITEHOST
+              - name: REDISWRITEPORT
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: REDISWRITEPORT
+              - name: REDISWRITEUSER
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: REDISWRITEUSER
+              - name: REDISWRITEPASS
+                valueFrom:
+                  configMapKeyRef:
+                    name: {{ .Values.moduleName }}-yaml
+                    key: REDISWRITEPASS
+              {{- end }}
+
+              - name: DM_SVC_PATH
+                value: /tmp/rds_conf/
+          ports:
+            - name: public-port
+              containerPort: {{ .Values.service.port }}
+            # ========== Executor端口 ==========
+            - name: executor-port
+              containerPort: {{ .Values.agentExecutor.port }}
+            # ========== Memory端口 ==========
+            - name: memory-port
+              containerPort: {{ .Values.agentMemory.port }}
+          {{- if ne .Values.runMode "dev"}}
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: public-port
+            initialDelaySeconds: {{ .Values.service.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.service.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.service.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.service.readinessProbe.failureThreshold }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "curl -sf http://localhost:{{ .Values.service.port }}/health/ready"
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          {{- end}}
+          volumeMounts:
+            # ========== ConfigMap文件使用subPath精确挂载 ==========
+            - name: {{ .Values.moduleName }}-yaml
+              mountPath: /sysvol/conf/agent-factory.yaml
+              subPath: agent-factory.yaml
+            - name: {{ .Values.moduleName }}-yaml
+              mountPath: /sysvol/conf/dm_svc.conf
+              subPath: dm_svc.conf
+            - name: {{ .Values.moduleName }}-yaml
+              mountPath: /sysvol/conf/mq_config.yaml
+              subPath: mq_config.yaml
+            # ========== 其他挂载 ==========
+            - name: {{ .Values.moduleName }}-dependant-configmap
+              mountPath: /mdl-shared-configmap
+            # ========== Secret使用目录级挂载 ==========
+            - name: {{ .Values.moduleName }}-secret-yaml
+              mountPath: /sysvol/conf/secret
+            # ========== Executor配置文件挂载 ==========
+            - name: executor-yaml-v2
+              mountPath: /sysvol/conf/agent-executor.yaml
+              subPath: agent-executor.yaml
+            # ========== 时间同步 ==========
+            - name: host-time
+              mountPath: /etc/localtime
+            # ========== DM配置 ==========
+            - name: rds-conf
+              mountPath: /tmp/rds_conf
+            {{- if eq .Values.runMode "dev" }}
+            - name: home-path
+              mountPath: /root
+            {{- end }}
+          {{- if ne .Values.runMode "dev" }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          {{ end }}
+      volumes:
+        - name: {{ .Values.moduleName }}-yaml
+          configMap:
+            name: {{ .Values.moduleName }}-yaml
+        - name: {{ .Values.moduleName }}-secret-yaml
+          secret:
+            secretName: {{ .Values.moduleName }}-secret-yaml
+        - name: {{ .Values.moduleName }}-dependant-configmap
+          configMap:
+            name: {{ .Values.moduleName }}-dependant-configmap
+        # ========== Executor配置Volume ==========
+        - name: executor-yaml-v2
+          configMap:
+            name: agent-executor-yaml-v2
+        # ========== 时间同步Volume ==========
+        - name: host-time
+          hostPath:
+            path: /etc/localtime
+        # ========== DM配置Volume ==========
+        - name: rds-conf
+          configMap:
+            name: {{ .Values.moduleName }}-yaml
+            items:
+            - key: dm_svc.conf
+              path: dm_svc.conf
+        {{ if eq .Values.runMode "dev" }}
+        - name: home-path
+          hostPath:
+            path: /root
+        {{ end }}
+      dnsConfig:
+         options:
+           - name: single-request-reopen
+           - name: use-vc

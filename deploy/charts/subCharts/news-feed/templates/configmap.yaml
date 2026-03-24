@@ -1,0 +1,56 @@
+{{- $env := include "mergedGlobalValues.env" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+{{- $accessAddress := include "mergedGlobalValues.accessAddress" . | fromYaml -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-yaml
+  namespace: {{ .Release.Namespace }}
+data:
+  news-feed.yaml: |
+
+    # 配置文件路径/sysvol/conf/news-feed.yaml
+    lang: {{ .Values.service.language | quote }} #系统语言
+
+    # NewsFeed服务
+    svc_host: 0.0.0.0
+    svc_public_port: {{ .Values.service.port }}
+    svc_private_port: {{ add1 .Values.service.port }}
+    business_time_offset: {{ .Values.service.businessTimeOffset }}
+    opened_keep_alive_time: {{ .Values.service.openedKeepAliveTime }}
+    upgraded_keep_alive_time: {{ .Values.service.upgradedKeepAliveTime }}
+    log_level: {{ .Values.service.logLevel }}
+    multipleReplicas: {{ .Values.service.multipleReplicas }}
+
+    # SSL证书
+    ssl_on: {{ .Values.service.sslOn }}
+    cert_file: {{ .Values.service.certFile }}
+    key_file: {{ .Values.service.keyFile }}
+
+    # 授权服务
+    oauth_public_host: {{ .Values.depServices.hydra.publicHost | quote }}
+    oauth_public_port: {{ .Values.depServices.hydra.publicPort }}
+    oauth_admin_host: {{ .Values.depServices.hydra.administrativeHost | quote }}
+    oauth_admin_port: {{ .Values.depServices.hydra.administrativePort }}
+
+    #redis服务
+    redis:
+      connectType: {{.Values.depServices.redis.connectType | quote }}
+      enableSSL: {{.Values.depServices.redis.enableSSL }}
+      connectInfo:
+        host: {{.Values.depServices.redis.connectInfo.host | quote }}
+        port: {{.Values.depServices.redis.connectInfo.port }}
+        masterHost: {{.Values.depServices.redis.connectInfo.masterHost | quote }}
+        masterPort: {{.Values.depServices.redis.connectInfo.masterPort }}
+        slaveHost: {{.Values.depServices.redis.connectInfo.slaveHost | quote }}
+        slavePort: {{.Values.depServices.redis.connectInfo.slavePort }}
+        sentinelHost: {{.Values.depServices.redis.connectInfo.sentinelHost | quote }}
+        sentinelPort: {{.Values.depServices.redis.connectInfo.sentinelPort }}
+        masterGroupName: {{.Values.depServices.redis.connectInfo.masterGroupName | quote }}
+      secretName: {{.Values.depServices.redis.secretName }}
+      caName: {{.Values.depServices.redis.caName }}
+      certName: {{.Values.depServices.redis.certName }}
+      keyName: {{.Values.depServices.redis.keyName }}
+
+  mq_config.yaml: |
+    {{- toYaml .Values.depServices.mq | nindent 4 }}

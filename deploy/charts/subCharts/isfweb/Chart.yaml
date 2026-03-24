@@ -1,0 +1,8 @@
+apiVersion: v1
+appVersion: 0.4.0-6a911c0-20260313.1
+description: A Helm chart for isfweb frontend
+keywords:
+- isfweb
+- AnyShare7.0
+name: isfweb
+version: 0.4.0-6a911c0-20260313.1

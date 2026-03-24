@@ -1,0 +1,15 @@
+apiVersion: v2
+appVersion: 0.3.0-git-d3483b4.1765718
+description: A Helm chart for Sandbox Platform - Secure code execution in isolated
+  container environments
+keywords:
+- sandbox
+- code-execution
+- isolation
+- kubernetes
+maintainers:
+- email: sandbox@example.com
+  name: Sandbox Team
+name: sandbox
+type: application
+version: 0.3.0

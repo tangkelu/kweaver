@@ -1,0 +1,113 @@
+# =============================================================================
+# KWeaver Core Local — Default Values
+# =============================================================================
+
+global:
+  image:
+    registry: ""
+  imagePullSecrets: []
+
+  replicaCount: 1
+  mode: Community
+  storageClass: ""
+  ingressClassName: "nginx"
+
+  env:
+    language: "en_US.UTF-8"
+    timezone: "Asia/Shanghai"
+
+  accessAddress:
+    host: ""
+    port: 443
+    scheme: https
+    path: /
+
+  flowAutomation:
+    s3:
+      default: "default"
+      connections: []
+
+  depServices:
+    rds:
+      host: ""
+      hostRead: ""
+      port: 3306
+      portRead: 3306
+      user: ""
+      password: ""
+      root_password: ""
+      database: "adp"
+      admin_key: ""
+      source_type: internal
+      type: MariaDB
+
+    redis:
+      connectType: standalone
+      sourceType: internal
+      connectInfo:
+        host: ""
+        port: 6379
+        username: "root"
+        password: ""
+        sentinelHost: ""
+        sentinelPort: 26379
+        sentinelUsername: ""
+        sentinelPassword: ""
+        masterGroupName: "mymaster"
+
+    mq:
+      mqType: kafka
+      mqHost: ""
+      mqPort: 9092
+      mqLookupdHost: ""
+      mqLookupdPort: 0
+      auth:
+        mechanism: ""
+        username: ""
+        password: ""
+
+    opensearch:
+      distribution: opensearch
+      host: ""
+      port: 9200
+      protocol: http
+      user: "admin"
+      password: ""
+      version: ""
+
+    mongodb:
+      source_type: internal
+      host: ""
+      port: 28000
+      user: ""
+      password: ""
+      replicaSet: ""
+      options:
+        authSource: admin
+
+    zookeeper:
+      host: ""
+      port: 2181
+
+modules:
+  isf:
+    enabled: false
+  agentoperator:
+    enabled: true
+  dataagent:
+    enabled: true
+  ontology:
+    enabled: true
+  sandboxruntime:
+    enabled: false
+
+dbInit:
+  enabled: false
+  image:
+    repository: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/busybox
+    tag: "1.37.0"
+    pullPolicy: IfNotPresent
+  backoffLimit: 3
+
+storage:
+  storageClassName: ""

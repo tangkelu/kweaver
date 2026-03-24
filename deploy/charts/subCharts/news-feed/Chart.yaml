@@ -1,0 +1,8 @@
+apiVersion: v1
+appVersion: 0.3.0-49dce71-20260206.1
+description: A Helm news-feed service chart for Kubernetes
+keywords:
+- news-feed
+- InformationSecurityFabric
+name: news-feed
+version: 0.3.0-49dce71-20260206.1

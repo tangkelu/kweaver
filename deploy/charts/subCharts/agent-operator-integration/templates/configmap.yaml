@@ -1,0 +1,128 @@
+{{- $env := include "mergedGlobalValues.env" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+{{- $accessAddress := include "mergedGlobalValues.accessAddress" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.moduleName }}
+  namespace: {{ .Release.Namespace }}
+data:
+  agent-operator-integration.yaml: |
+    project:
+      language: {{ .Values.service.language | quote }}
+      host: "0.0.0.0"
+      port: {{ .Values.service.port }}
+      logger_level: {{ .Values.service.loggerLevel }}
+      name: {{ .Values.service.name | quote }}
+      pod_id: {{ .Values.service.podID | quote }}
+      machine_id: {{ .Values.service.machineID | quote }}
+      debug: {{ .Values.service.debug }}
+    operator:
+      import_file_size_limit: {{ .Values.service.operator.importFileSizeLimit }}
+      import_operator_max_count: {{ .Values.service.operator.importOperatorMaxCount }}
+      operator_description_length_limit: {{ .Values.service.operator.descriptionLengthLimit }}
+    mcp:
+      conn_timeout: {{ .Values.service.mcp.connTimeout }}
+      max_instances: {{ .Values.service.mcp.maxInstances }}
+      instance_ttl: {{ .Values.service.mcp.instanceTTL }}
+      cleanup_interval: {{ .Values.service.mcp.cleanupInterval }}
+    category:
+      init_switch: {{ .Values.service.category.initSwitch }}
+    proxy_module:
+      default_timeout: {{ .Values.service.proxyModule.defaultTimeout }}
+      max_timeout: {{ .Values.service.proxyModule.maxTimeout }}
+      max_clients: {{ .Values.service.proxyModule.maxClients }}
+      client_lifetime: {{ .Values.service.proxyModule.clientLifetime }}
+    oauth:
+      public_host: {{ $depServices.hydra.publicHost | quote }}
+      public_port: {{ $depServices.hydra.publicPort }}
+      public_protocol: {{ $depServices.hydra.publicProtocol | quote }}
+      admin_host: {{ $depServices.hydra.administrativeHost | quote }}
+      admin_port: {{ $depServices.hydra.administrativePort }}
+      admin_protocol: {{ $depServices.hydra.administrativeProtocol | quote }}
+      admin_prefix: {{ $depServices.hydra.administrativePrefix | quote }}
+    user_management:
+      private_protocol: {{ index $depServices "user-management" "privateProtocol" | quote }}
+      private_host: {{ index $depServices "user-management" "privateHost" | quote }}
+      private_port: {{ index $depServices "user-management" "privatePort" }}
+    authorization:
+      private_protocol: {{ $depServices.authorization.privateProtocol | quote }}
+      private_host: {{ $depServices.authorization.privateHost | quote }}
+      private_port: {{ $depServices.authorization.privatePort }}
+    business-system-service:
+      private_protocol: {{ index $depServices "business-system-service" "privateProtocol" | quote }}
+      private_host: {{ index $depServices "business-system-service" "privateHost" | quote }}
+      private_port: {{ index $depServices "business-system-service" "privatePort" }}
+    db:
+      conn_timeout: {{ $depServices.rds.connTimeout }}
+      read_timeout: {{ $depServices.rds.readTimeout }}
+      write_timeout: {{ $depServices.rds.writeTimeout }}
+      max_open_conns: {{ $depServices.rds.maxConnections }}
+      system_id: {{ $depServices.rds.system_id | quote }}
+    redis:
+      connectType: {{ $depServices.redis.connectType | quote }}
+      enableSSL: {{ $depServices.redis.enableSSL }}
+      secretName: {{ $depServices.redis.secretName | quote }}
+      caName: {{ $depServices.redis.caName | quote }}
+      certName: {{ $depServices.redis.certName | quote }}
+      keyName: {{ $depServices.redis.keyName | quote }}
+      poolSize: {{ $depServices.redis.connectInfo.poolSize }}
+    flow-automation:
+      private_protocol: {{ index $depServices "flow-automation" "privateProtocol" | quote }}
+      private_host: {{ index $depServices "flow-automation" "privateHost" | quote }}
+      private_port: {{ index $depServices "flow-automation" "privatePort" }}
+    sandbox-control-plane:
+      private_protocol: {{ index $depServices "sandbox-control-plane" "privateProtocol" | quote }}
+      private_host: {{ index $depServices "sandbox-control-plane" "privateHost" | quote }}
+      private_port: {{ index $depServices "sandbox-control-plane" "privatePort" }}
+      template_id: {{ index $depServices "sandbox-control-plane" "templateID" | quote }}
+      session_resources:
+        cpu: {{ index $depServices "sandbox-control-plane" "sessionResources" "cpu" | quote }}
+        memory: {{ index $depServices "sandbox-control-plane" "sessionResources" "memory" | quote }}
+        disk: {{ index $depServices "sandbox-control-plane" "sessionResources" "disk" | quote }}
+        timeout: {{ index $depServices "sandbox-control-plane" "sessionResources" "timeout" }}
+      max_sessions: {{ index $depServices "sandbox-control-plane" "maxSessions" }}
+      active_sessions: {{ index $depServices "sandbox-control-plane" "activeSessions" }}
+      max_concurrent_tasks: {{ index $depServices "sandbox-control-plane" "maxConcurrentTasks" }}
+    mf-model-api:
+      private_protocol: {{ index $depServices "mf-model-api" "privateProtocol" | quote }}
+      private_host: {{ index $depServices "mf-model-api" "privateHost" | quote }}
+      private_port: {{ index $depServices "mf-model-api" "privatePort" }}
+    mf-model-manager:
+      private_protocol: {{ index $depServices "mf-model-manager" "privateProtocol" | quote }}
+      private_host: {{ index $depServices "mf-model-manager" "privateHost" | quote }}
+      private_port: {{ index $depServices "mf-model-manager" "privatePort" }}
+    ai_generation_config:
+      python_function_generator_prompt_id: {{ $depServices.aiGenerationConfig.pythonFunctionGeneratorPromptID | quote }}
+      metadata_param_generator_prompt_id: {{ $depServices.aiGenerationConfig.metadataParamGeneratorPromptID | quote }}
+      llm:
+        model: {{ $depServices.aiGenerationConfig.llm.model | quote }}
+        max_tokens: {{ $depServices.aiGenerationConfig.llm.maxTokens }}
+        temperature: {{ $depServices.aiGenerationConfig.llm.temperature }}
+        top_k: {{ $depServices.aiGenerationConfig.llm.topK }}
+        top_p: {{ $depServices.aiGenerationConfig.llm.topP }}
+        frequency_penalty: {{ $depServices.aiGenerationConfig.llm.frequencyPenalty }}
+        presence_penalty: {{ $depServices.aiGenerationConfig.llm.presencePenalty }}
+
+  mq_config.yaml: |
+    {{- toYaml $depServices.mq | nindent 4 }}
+
+  observability.yaml: |
+    # 可观测相关配置
+    traceType: {{ .Values.observability.traceType | quote }}
+    logEnabled: {{ .Values.observability.logEnabled }}
+    traceEnabled: {{ .Values.observability.traceEnabled }}
+    metricEnabled: {{ .Values.observability.metricEnabled }}
+    logExporter: {{ .Values.observability.logExporter | quote }}
+    traceProvider: {{ .Values.observability.traceProvider | quote }}
+    metricProvider: {{ .Values.observability.metricProvider | quote }}
+    logLoadInternal: {{ .Values.observability.logLoadInternal }}
+    logLoadMaxLog: {{ .Values.observability.logLoadMaxLog }}
+    traceMaxQueueSize: {{ .Values.observability.traceMaxQueueSize }}
+    metricIntervalSecond: {{ .Values.observability.metricIntervalSecond }}
+    httpLogFeedIngesterUrl: {{ .Values.observability.httpLogFeedIngesterUrl | quote }}
+    httpTraceFeedIngesterUrl: {{ .Values.observability.httpTraceFeedIngesterUrl | quote }}
+    httpMetricFeedIngesterUrl: {{ .Values.observability.httpMetricFeedIngesterUrl | quote }}
+    grpcTraceFeedIngesterUrl: {{ .Values.observability.grpcTraceFeedIngesterUrl | quote }}
+    grpcTraceJobId: {{ .Values.observability.grpcTraceJobId | quote }}

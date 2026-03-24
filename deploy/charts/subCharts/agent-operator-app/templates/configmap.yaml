@@ -1,0 +1,44 @@
+{{- $env := include "mergedGlobalValues.env" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+{{- $accessAddress := include "mergedGlobalValues.accessAddress" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.moduleName }}
+  namespace: {{ .Release.Namespace }}
+data:
+  agent-operator-app.yaml: |     # 配置文件路径/sysvol/conf/agent-operator-app.yaml
+    project:
+      language: {{ .Values.service.language }}
+      host: "0.0.0.0"
+      port: {{ .Values.service.port }}
+      logger_level: {{ .Values.service.loggerLevel }}
+      name: {{ .Values.service.name | quote }}
+      pod_id : {{ .Values.service.podID | quote }}
+      machine_id: {{ .Values.service.machineID | quote }}
+      debug: {{ .Values.service.debug }}
+    oauth:
+      public_host: {{ $depServices.hydra.publicHost | quote }}
+      public_port: {{ $depServices.hydra.publicPort }}
+      public_protocol: {{ $depServices.hydra.publicProtocol | quote }}
+      admin_host: {{ $depServices.hydra.administrativeHost | quote }}
+      admin_port: {{ $depServices.hydra.administrativePort }}
+      admin_protocol: {{ $depServices.hydra.administrativeProtocol | quote }}
+      admin_prefix: {{ $depServices.hydra.administrativePrefix | quote }}
+    user_management:
+      private_protocol: {{ index $depServices "user-management" "privateProtocol" | quote }}
+      private_host: {{ index $depServices "user-management" "privateHost" | quote }}
+      private_port: {{ index $depServices "user-management" "privatePort" }}
+    operator_integration:
+      private_protocol: {{ index $depServices "operator-integration" "privateProtocol" | quote }}
+      private_host: {{ index $depServices "operator-integration" "privateHost" | quote }}
+      private_port: {{ index $depServices "operator-integration" "privatePort" }}
+    db:
+      conn_timeout: {{ $depServices.rds.connTimeout }}
+      read_timeout: {{ $depServices.rds.readTimeout }}
+      write_timeout: {{ $depServices.rds.writeTimeout }}
+      max_open_conns: {{$depServices.rds.maxConnections}}
+      system_id: {{ $depServices.rds.system_id | quote }}
+
+

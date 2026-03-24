@@ -1,0 +1,8 @@
+apiVersion: v1
+appVersion: 0.3.0-07ddb2d-20260206.1
+description: A Helm message service chart for Kubernetes
+keywords:
+- message
+- InformationSecurityFabric
+name: message
+version: 0.3.0-07ddb2d-20260206.1

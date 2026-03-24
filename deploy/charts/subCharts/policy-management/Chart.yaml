@@ -1,0 +1,10 @@
+apiVersion: v1
+appVersion: 0.4.0-243cc7b-20260313.1
+description: 策略管理服务
+keywords:
+- policy-management
+- InformationSecurityFabric
+name: policy-management
+sources:
+- https://gitlab.aishu.cn/AnyShareFamily/Console/policy-management.git
+version: 0.4.0-243cc7b-20260313.1

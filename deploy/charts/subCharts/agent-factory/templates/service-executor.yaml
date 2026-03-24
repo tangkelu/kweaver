@@ -1,0 +1,18 @@
+# Agent Executor Service (内部服务)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.moduleName }}-executor
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.moduleName }}
+    service: agent-executor
+spec:
+  ports:
+    - name: executor-port
+      protocol: TCP
+      port: {{ .Values.agentExecutor.port }}
+      targetPort: {{ .Values.agentExecutor.port }}
+  selector:
+    app: {{ .Values.moduleName }}
+  type: ClusterIP

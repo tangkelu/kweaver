@@ -1,0 +1,93 @@
+{{- $ingressClassName := include "mergedGlobalValues.ingressClassName" . -}}
+{{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "template.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ $ingressClassName }}
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: {{ include "template.fullname" $ }}-service
+            port:
+              number: 8877
+        path: /api/workstation/v1/menu
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ include "template.fullname" $ }}-service
+            port:
+              number: 18080
+        path: /interface/studioweb
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ include "template.fullname" $ }}-service
+            port:
+              number: 18080
+        path: /api/studio-web-service
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ include "template.fullname" $ }}-service
+            port:
+              number: 18080
+        path: /api/studioweb
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ include "template.fullname" $ }}-static
+            port:
+              number: 18800
+        path: /studio
+        pathType: Prefix
+{{- end }}
+
+---
+{{- if semverCompare "<1.19-0" .Capabilities.KubeVersion.GitVersion }}
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ include "template.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    kubernetes.io/ingress.class: {{ $ingressClassName }}
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          serviceName: {{ include "template.fullname" $ }}-service
+          servicePort: 8877
+        path: /api/workstation/v1/menu
+      - backend:
+          serviceName: {{ include "template.fullname" $ }}-service
+          servicePort: 18080
+        path: /interface/studioweb
+      - backend:
+          serviceName: {{ include "template.fullname" $ }}-service
+          servicePort: 18080
+        path: /api/studioweb
+      - backend:
+          serviceName: {{ include "template.fullname" $ }}-service
+          servicePort: 18080
+        path: /api/studio-web-service
+      - backend:
+          serviceName: {{ include "template.fullname" $ }}-static
+          servicePort: 18800
+        path: /studio
+      
+{{- end }}

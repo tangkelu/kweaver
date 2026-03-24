@@ -142,14 +142,6 @@ dependencies:
   version: 0.5.0-alpha.1
   repository: http://127.0.0.1:8879
   condition: modules.studio.enabled
-- name: business-system-frontend
-  version: 0.5.0-alpha.1
-  repository: http://127.0.0.1:8879
-  condition: modules.studio.enabled
-- name: business-system-service
-  version: 0.5.0-alpha.1
-  repository: http://127.0.0.1:8879
-  condition: modules.studio.enabled
 - name: mf-model-manager-nginx
   version: 0.5.0-alpha.1
   repository: http://127.0.0.1:8879

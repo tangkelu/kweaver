@@ -1,0 +1,220 @@
+{{- $env := include "mergedGlobalValues.env" . | fromYaml -}}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ include "mergedGlobalValues.replicaCount" . }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+    spec:
+      dnsConfig:
+        options:
+        - name: single-request-reopen
+        - name: use-vc
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ include "mergedGlobalValues.image" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.ports.apiPort }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.ports.apiPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: {{ .Values.resources.requests.memory }}
+              cpu: {{ .Values.resources.requests.cpu }}
+            limits:
+               memory: {{ .Values.resources.limits.memory }}
+               cpu: {{ .Values.resources.limits.cpu }}
+          env:
+            - name: DEVICE_CODE
+              value: {{ $env.devicecode }}
+            - name: OPENSEARCH_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: OPENSEARCH_HOST
+            - name: OPENSEARCHWRITE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: OPENSEARCHWRITE
+            - name: OPENSEARCHREAD
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: OPENSEARCHRED
+            - name: OPENSEARCH_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: OPENSEARCH_PORT
+            - name: OPENSEARCH_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: OPENSEARCH_USER
+            - name: OPENSEARCH_PASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: OPENSEARCH_PASS
+            - name: REDISCLUSTERMODE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: REDISCLUSTERMODE
+            - name: REDISUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: REDISUSER
+            - name: REDISPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: REDISPASS
+            {{- if ne $depServices.redis.connectType "master-slave" }}
+            - name: REDISHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: REDISHOST
+            - name: REDISPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: REDISPORT
+            {{- end }}
+            {{- if eq $depServices.redis.connectType "sentinel" }}
+            - name: SENTINELMASTER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: SENTINELMASTER
+            - name: SENTINELUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: SENTINELUSER
+            - name: SENTINELPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: SENTINELPASS
+            {{- end }}
+            {{- if eq $depServices.redis.connectType "master-slave" }}
+            - name: REDISREADHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: REDISREADHOST
+            - name: REDISREADPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: REDISREADPORT
+            - name: REDISREADUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: REDISREADUSER
+            - name: REDISREADPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: REDISREADPASS
+            - name: REDISWRITEHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: REDISWRITEHOST
+            - name: REDISWRITEPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: REDISWRITEPORT
+            - name: REDISWRITEUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: REDISWRITEUSER
+            - name: REDISWRITEPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: REDISWRITEPASS
+            {{- end }}
+            - name: RERANKER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: RERANKER_URL
+            - name: EMB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: EMB_URL
+            - name: EMBEDDING_DIMENSION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: EMBEDDING_DIMENSION
+            - name: OAUTHPUBLICHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: OAUTHPUBLICHOST
+            - name: OAUTHPUBLICPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: OAUTHPUBLICPORT
+            - name: OAUTHADMINHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: OAUTHADMINHOST
+            - name: OAUTHADMINPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: OAUTHADMINPORT
+            - name: USERMANAGEMENTPUBLICHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: USERMANAGEMENTPUBLICHOST
+            - name: USERMANAGEMENTPUBLICPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: USERMANAGEMENTPUBLICPORT
+            - name: USERMANAGEMENTPRIVATEHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: USERMANAGEMENTPRIVATEHOST
+            - name: USERMANAGEMENTPRIVATEPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Chart.Name }}-yaml
+                  key: USERMANAGEMENTPRIVATEPORT
+            - name: RERANK_LLM_MODEL
+              value: {{ .Values.appConfig.rerank_llm_model.name }}

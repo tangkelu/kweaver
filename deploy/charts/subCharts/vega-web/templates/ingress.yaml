@@ -1,0 +1,29 @@
+{{- if .Values.service.manageWeb.ingress.enabled -}}
+{{ if .Values.service.manageWeb.ingress.interface }}
+{{- $depServices := include "mergedGlobalValues.depServices" . | fromYaml -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.moduleName }}-ingress
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+{{- if index $depServices "class-443" "ingressClass" }}
+  ingressClassName: {{ index $depServices "class-443" "ingressClass" }}
+{{- end }}
+  rules:
+  - http:
+      paths:
+        {{- range .Values.service.manageWeb.ingress.interface.path }}
+        - path: {{ . }}
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: {{ $.Values.moduleName }}-svc
+              port:
+                number: {{ $.Values.service.manageWeb.port }}
+        {{- end }}
+{{ end }}
+{{- end }}
