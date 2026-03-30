@@ -170,6 +170,10 @@ _core_download_charts_dir() {
 }
 
 _core_auto_resolve_version_manifest() {
+    if [[ -z "${HELM_CHART_VERSION:-}" && -z "${CORE_VERSION_MANIFEST_FILE:-}" ]]; then
+        HELM_CHART_VERSION="$(resolve_latest_embedded_release_version "kweaver-core")"
+    fi
+
     if [[ -n "${CORE_VERSION_MANIFEST_FILE:-}" || -z "${HELM_CHART_VERSION:-}" ]]; then
         return 0
     fi

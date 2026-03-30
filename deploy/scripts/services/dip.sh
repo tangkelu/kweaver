@@ -234,6 +234,10 @@ _dip_download_charts_dir() {
 }
 
 _dip_auto_resolve_version_manifest() {
+    if [[ -z "${HELM_CHART_VERSION:-}" && -z "${DIP_VERSION_MANIFEST_FILE:-}" ]]; then
+        HELM_CHART_VERSION="$(resolve_latest_embedded_release_version "kweaver-dip")"
+    fi
+
     if [[ -n "${DIP_VERSION_MANIFEST_FILE:-}" || -z "${HELM_CHART_VERSION:-}" ]]; then
         return 0
     fi

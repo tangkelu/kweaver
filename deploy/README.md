@@ -142,6 +142,9 @@ The deployment scripts need access to the following domains:
 ./deploy.sh kweaver-core install --config=/root/.kweaver-ai/config.yaml
 # Use a specific config file
 
+./deploy.sh kweaver-core install
+# Without --version, aggregate products default to the latest embedded release manifest version found under deploy/release-manifests/ (currently 0.5.0)
+
 ./deploy.sh kweaver-core install --helm_repo=https://acr.aishu.cn/chartrepo/public --version=0.4.0
 # Install 0.4.0; when deploy/release-manifests/0.4.0/kweaver-core.yaml exists, deploy resolves exact chart versions from it automatically
 
@@ -185,10 +188,10 @@ The deployment scripts need access to the following domains:
 - The shared chart cache directory defaults to `deploy/.tmp/charts`
 - If `download` cannot find `helm`, it installs `helm` first
 - `download` uses incremental refresh by default instead of re-downloading everything
+- If `--version` is not set, aggregate products first scan `deploy/release-manifests/` and default to the latest embedded release version directory, for example `0.5.0`
 - If `--version` is set and `deploy/release-manifests/<version>/<product>.yaml` exists, aggregate modules resolve each release's exact chart version from that embedded manifest
 - If `--version_file` is set, it overrides the embedded manifest path explicitly
-- If neither an embedded manifest nor `--version_file` is present, the old behavior remains: the script applies `--version` directly to charts
-- If `--version` is not set, the script compares the repo latest chart version with the newest cached local version and only downloads when the repo is newer
+- If neither a matching embedded manifest nor `--version_file` is present, the old behavior remains: the script applies `--version` directly to charts, or falls back to repo latest when no version was specified
 - `kweaver-core download` includes ISF charts by default; use `--enable-isf=false` to skip them
 - `kweaver-dip download` automatically downloads the full DIP + KWeaver Core + ISF dependency chart set
 - `download` is the only path that creates or updates the default shared cache in `deploy/.tmp/charts`
@@ -213,6 +216,7 @@ These manifests are edited manually and committed with the deploy scripts. The v
 ### Versioned SQL initialization
 
 - SQL is resolved by aggregate version and product under `deploy/scripts/sql/<version>/<product>/`
+- When `--version` is omitted for aggregate products, SQL follows the same latest embedded release version chosen from `deploy/release-manifests/`
 - `isf install --version=<x>` executes `deploy/scripts/sql/<x>/isf/` when that directory contains `.sql` files
 - `kweaver-core install --version=<x>` executes module directories under `deploy/scripts/sql/<x>/kweaver-core/`
 - `kweaver-dip install --version=<x>` executes `deploy/scripts/sql/<x>/kweaver-dip/` only when that directory exists and contains `.sql` files

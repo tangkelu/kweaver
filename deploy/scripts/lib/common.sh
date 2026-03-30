@@ -430,6 +430,31 @@ resolve_embedded_release_manifest() {
     fi
 }
 
+# List embedded release-manifest versions that exist for one product.
+# Args: <product>
+list_embedded_release_versions() {
+    local product="$1"
+
+    if [[ -z "${product}" || ! -d "${RELEASE_MANIFESTS_DIR}" ]]; then
+        return 0
+    fi
+
+    find "${RELEASE_MANIFESTS_DIR}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null \
+        | awk '/^[0-9]+(\.[0-9]+){1,2}([-.][A-Za-z0-9]+)?$/ { print }' \
+        | while IFS= read -r version; do
+            [[ -f "${RELEASE_MANIFESTS_DIR}/${version}/${product}.yaml" ]] || continue
+            printf '%s\n' "${version}"
+        done \
+        | sort -V
+}
+
+# Resolve the latest embedded release-manifest version for one product.
+# Args: <product>
+resolve_latest_embedded_release_version() {
+    local product="$1"
+    list_embedded_release_versions "${product}" | tail -n 1
+}
+
 # Resolve the exact chart version for one aggregate release.
 # Args: <manifest_file> <expected_product> <aggregate_version> <release_name> [fallback_version]
 resolve_release_chart_version() {

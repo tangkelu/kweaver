@@ -106,6 +106,7 @@ usage() {
     echo "                                install only uses local charts when this option is explicitly set"
     echo "  --version_file=<path>         Use an aggregate release manifest to resolve exact chart versions"
     echo "                                (default auto path: deploy/release-manifests/<version>/<product>.yaml)"
+    echo "                                when --version is omitted, aggregate products pick the latest embedded release version"
     echo ""
     echo "  $0 kweaver-core install --enable-isf=false  # Install KWeaver Core without ISF; auto-installs K8s/data services if absent"
     echo "  $0 kweaver-core download --enable-isf=false # Download Core charts only, skip ISF charts"

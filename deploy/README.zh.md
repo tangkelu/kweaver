@@ -142,6 +142,9 @@ dnf install containerd.io
 ./deploy.sh kweaver-core install --config=/root/.kweaver-ai/config.yaml
 # 指定配置文件
 
+./deploy.sh kweaver-core install
+# 不传 --version 时，聚合产品会先从 deploy/release-manifests/ 的版本目录里选择最新版本，当前即 0.5.0
+
 ./deploy.sh kweaver-core install --helm_repo=https://acr.aishu.cn/chartrepo/public --version=0.4.0
 # 安装 0.4.0；如果 deploy/release-manifests/0.4.0/kweaver-core.yaml 存在，会自动按 manifest 解析每个 chart 的精确版本
 
@@ -186,10 +189,10 @@ dnf install containerd.io
 - 共享缓存目录默认是 `deploy/.tmp/charts`
 - `download` 如果检测不到 `helm`，会先自动安装 `helm`
 - `download` 默认增量刷新，不会每次全量重下
+- 如果不指定 `--version`，聚合产品会先扫描 `deploy/release-manifests/`，并默认使用其中最新的版本目录，例如 `0.5.0`
 - 如果指定 `--version`，且存在 `deploy/release-manifests/<version>/<product>.yaml`，聚合模块会从该 embedded manifest 解析每个 release 的精确 chart 版本
 - 如果指定 `--version_file`，会显式覆盖 embedded manifest 路径
-- 如果没有 embedded manifest，也没有传 `--version_file`，则保持旧行为：直接把 `--version` 当作 chart 版本使用
-- 如果不指定 `--version`，脚本会比较 Helm repo 最新版本和本地缓存的最新版本，仅在 repo 更新时下载
+- 如果没有匹配的 embedded manifest，且没有传 `--version_file`，则保持旧行为：传了 `--version` 就直接把它当作 chart 版本；没传则回退到 repo latest
 - `kweaver-core download` 默认会连同 ISF 一起下载；可用 `--enable-isf=false` 关闭
 - `kweaver-dip download` 会自动下载 DIP、KWeaver Core、ISF 的完整依赖 chart
 - 只有 `download` 会创建或更新默认共享缓存目录 `deploy/.tmp/charts`
@@ -214,6 +217,7 @@ deploy/release-manifests/
 ### SQL 按版本初始化
 
 - SQL 按聚合版本和产品维度存放在 `deploy/scripts/sql/<version>/<product>/`
+- 聚合产品不传 `--version` 时，SQL 也会跟随 `deploy/release-manifests/` 中选出的最新版本
 - `isf install --version=<x>` 会执行 `deploy/scripts/sql/<x>/isf/` 下存在的 `.sql` 文件
 - `kweaver-core install --version=<x>` 会执行 `deploy/scripts/sql/<x>/kweaver-core/` 下各模块目录
 - `kweaver-dip install --version=<x>` 只会在 `deploy/scripts/sql/<x>/kweaver-dip/` 存在且包含 `.sql` 文件时执行

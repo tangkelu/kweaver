@@ -54,6 +54,42 @@ test_embedded_manifest_path_lookup() {
     assert_eq "${actual}" "${EMBEDDED_DIR}/0.4.0/kweaver-core.yaml" "embedded manifest path should resolve from version/product"
 }
 
+test_latest_embedded_release_version_lookup() {
+    local actual
+    actual="$(resolve_latest_embedded_release_version "kweaver-core")"
+    assert_eq "${actual}" "0.5.0" "latest embedded manifest version should be selected from the version directory list"
+}
+
+test_core_auto_resolves_latest_embedded_manifest_without_explicit_version() {
+    HELM_CHART_VERSION=""
+    CORE_VERSION_MANIFEST_FILE=""
+
+    _core_auto_resolve_version_manifest
+
+    assert_eq "${HELM_CHART_VERSION}" "0.5.0" "core should default to latest embedded release version when --version is omitted"
+    assert_eq "${CORE_VERSION_MANIFEST_FILE}" "${EMBEDDED_DIR}/0.5.0/kweaver-core.yaml" "core should default to the latest embedded manifest file"
+}
+
+test_isf_auto_resolves_latest_embedded_manifest_without_explicit_version() {
+    HELM_CHART_VERSION=""
+    ISF_VERSION_MANIFEST_FILE=""
+
+    _isf_auto_resolve_version_manifest
+
+    assert_eq "${HELM_CHART_VERSION}" "0.5.0" "isf should default to latest embedded release version when --version is omitted"
+    assert_eq "${ISF_VERSION_MANIFEST_FILE}" "${EMBEDDED_DIR}/0.5.0/isf.yaml" "isf should default to the latest embedded manifest file"
+}
+
+test_dip_auto_resolves_latest_embedded_manifest_without_explicit_version() {
+    HELM_CHART_VERSION=""
+    DIP_VERSION_MANIFEST_FILE=""
+
+    _dip_auto_resolve_version_manifest
+
+    assert_eq "${HELM_CHART_VERSION}" "0.5.0" "dip should default to latest embedded release version when --version is omitted"
+    assert_eq "${DIP_VERSION_MANIFEST_FILE}" "${EMBEDDED_DIR}/0.5.0/kweaver-dip.yaml" "dip should default to the latest embedded manifest file"
+}
+
 test_dip_manifest_direct_isf_dependency_lookup() {
     local actual_manifest
     local actual_version
@@ -219,6 +255,10 @@ test_manifest_release_lookup
 test_manifest_dependency_lookup
 test_core_manifest_release_names
 test_embedded_manifest_path_lookup
+test_latest_embedded_release_version_lookup
+test_core_auto_resolves_latest_embedded_manifest_without_explicit_version
+test_isf_auto_resolves_latest_embedded_manifest_without_explicit_version
+test_dip_auto_resolves_latest_embedded_manifest_without_explicit_version
 test_dip_manifest_direct_isf_dependency_lookup
 test_sql_dir_resolution
 test_core_sql_modules_for_0_4_0
